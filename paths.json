@@ -5,6 +5,6 @@
     "/content/aem-boilerplate/metadata:/metadata.json"
   ],
   "includes": [
-    "/content/universal-editor-getting-started-site/"
+    "/content/universal-editor-getting/"
   ]
 }
