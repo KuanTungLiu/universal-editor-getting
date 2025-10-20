@@ -1,10 +1,10 @@
 {
   "mappings": [
-    "/content/uegss-kuantung/:/",
-    "/content/uegss-kuantung/configuration:/.helix/config.json",
-    "/content/uegss-kuantung/metadata:/metadata.json"
+    "/content/ktliu-testing/:/",
+    "/content/ktliu-testing/configuration:/.helix/config.json",
+    "/content/ktliu-testing/metadata:/metadata.json"
   ],
   "includes": [
-    "/content/uegss-kuantung/"
+    "/content/ktliu-testing/"
   ]
 }
