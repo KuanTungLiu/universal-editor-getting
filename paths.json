@@ -1,0 +1,10 @@
+{
+  "mappings": [
+    "/content/ktliu-testing/:/",
+    "/content/ktliu-testing/configuration:/.helix/config.json",
+    "/content/ktliu-testing/metadata:/metadata.json"
+  ],
+  "includes": [
+    "/content/ktliu-testing/"
+  ]
+}
