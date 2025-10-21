@@ -216,13 +216,13 @@
     ]
   },
   {
-    "id": "quote1",
+    "id": "quote",
     "fields": [
       {
         "component": "richtext",
-        "name": "quote1",
+        "name": "quote",
         "value": "",
-        "label": "quote1",
+        "label": "quote",
         "valueType": "string"
       },
       {
