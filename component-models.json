@@ -8,7 +8,6 @@
         "name": "jcr:title",
         "label": "Title"
       },
-      
       {
         "component": "text",
         "valueType": "string",
@@ -181,47 +180,6 @@
     ]
   },
   {
-  "id": "quote",
-  "fields": [
-     {
-       "component": "richtext",
-       "name": "quote",
-       "value": "",
-       "label": "Quote",
-       "valueType": "string"
-     },
-     {
-       "component": "text",
-       "valueType": "string",
-       "name": "author",
-       "label": "Author",
-       "value": ""
-     },
-{
-        "component": "select",
-        "name": "classes",
-        "value": "",
-        "label": "Background Color",
-        "description": "The quote background color",
-        "valueType": "string",
-        "options": [
-          {
-            "name": "Red",
-            "value": "bg-red"
-          },
-          {
-            "name": "Green",
-            "value": "bg-green"
-          },
-          {
-            "name": "Blue",
-            "value": "bg-blue"
-          }
-        ]
-      }
-     ]
-  },
-  {
     "id": "fragment",
     "fields": [
       {
@@ -256,79 +214,5 @@
         "valueType": "string"
       }
     ]
-  },
-  {
-    "id": "teaser",
-    "fields": [
-      {
-        "component": "reference",
-        "valueType": "string",
-        "name": "image",
-        "label": "Image",
-        "multi": false
-      },
-      {
-        "component": "text",
-        "valueType": "string",
-        "name": "imageAlt",
-        "label": "Image Alt Text",
-        "value": ""
-      },
-      {
-        "component": "text",
-        "valueType": "string",
-        "name": "teaserText_subtitle",
-        "label": "Subtitle",
-        "value": ""
-      },
-      {
-        "component": "text",
-        "valueType": "string",
-        "name": "teaserText_title",
-        "label": "Title",
-        "value": ""
-      },
-      {
-        "component": "richtext",
-        "valueType": "string",
-        "name": "teaserText_description",
-        "label": "Description",
-        "value": ""
-      },
-      {
-        "component": "text",
-        "valueType": "string",
-        "name": "teaserText_cta1",
-        "label": "CTA 1 Link",
-        "value": ""
-      },
-      {
-        "component": "text",
-        "valueType": "string",
-        "name": "teaserText_cta1Text",
-        "label": "CTA 1 Text",
-        "value": ""
-      },
-      {
-      "component": "select",
-      "name": "teaserText_cta1Type",
-      "label": "CTA 1 Type",
-      "valueType": "string",
-      "options": [
-        {
-          "name": "Default",
-          "value": ""
-        },
-        {
-          "name": "Primary",
-          "value": "primary"
-        },
-        {
-          "name": "Secondary",
-          "value": "secondary"
-        }
-      ]
-    }
-  ]
-}
-    ]
+  }
+]
