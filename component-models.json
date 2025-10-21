@@ -308,7 +308,27 @@
         "name": "teaserText_cta1Text",
         "label": "CTA 1 Text",
         "value": ""
-      }
+      },
+      {
+      "component": "select",
+      "name": "teaserText_cta1Type",
+      "label": "CTA 1 Type",
+      "valueType": "string",
+      "options": [
+        {
+          "name": "Default",
+          "value": ""
+        },
+        {
+          "name": "Primary",
+          "value": "primary"
+        },
+        {
+          "name": "Secondary",
+          "value": "secondary"
+        }
+      ]
+    }
+  ]
+}
     ]
-  }
-]
