@@ -47,7 +47,7 @@ export default function decorate(block) {
     const innerHTML = p.innerHTML?.trim();
 
     // If the paragraph starts with Terms and conditions: then style it as such
-    if (innerHTML?.startsWith("Terms and conditions:")) {
+    if (innerHTML?.startsWith('Terms and conditions:')) {
       /* If a paragraph starts with '*', add a special CSS class. */
       p.classList.add('terms-and-conditions');
     }
