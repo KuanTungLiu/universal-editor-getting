@@ -216,6 +216,25 @@
     ]
   },
   {
+    "id": "quote1",
+    "fields": [
+      {
+        "component": "richtext",
+        "name": "quote1",
+        "value": "",
+        "label": "quote1",
+        "valueType": "string"
+      },
+      {
+        "component": "text",
+        "valueType": "string",
+        "name": "author",
+        "label": "Author",
+        "value": ""
+      }
+    ]
+  },
+  {
     "id": "teaser",
     "fields": [
       {
