@@ -256,5 +256,59 @@
         "valueType": "string"
       }
     ]
+  },
+  {
+    "id": "teaser",
+    "fields": [
+      {
+        "component": "reference",
+        "valueType": "string",
+        "name": "image",
+        "label": "Image",
+        "multi": false
+      },
+      {
+        "component": "text",
+        "valueType": "string",
+        "name": "imageAlt",
+        "label": "Image Alt Text",
+        "value": ""
+      },
+      {
+        "component": "text",
+        "valueType": "string",
+        "name": "teaserText_subtitle",
+        "label": "Subtitle",
+        "value": ""
+      },
+      {
+        "component": "text",
+        "valueType": "string",
+        "name": "teaserText_title",
+        "label": "Title",
+        "value": ""
+      },
+      {
+        "component": "richtext",
+        "valueType": "string",
+        "name": "teaserText_description",
+        "label": "Description",
+        "value": ""
+      },
+      {
+        "component": "text",
+        "valueType": "string",
+        "name": "teaserText_cta1",
+        "label": "CTA 1 Link",
+        "value": ""
+      },
+      {
+        "component": "text",
+        "valueType": "string",
+        "name": "teaserText_cta1Text",
+        "label": "CTA 1 Text",
+        "value": ""
+      }
+    ]
   }
 ]
