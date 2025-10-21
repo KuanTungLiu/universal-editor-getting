@@ -10,7 +10,6 @@
 function addEventListeners(block) {
   const button = block.querySelector('.button');
   const image = block.querySelector('.image');
-  
   // 檢查元素是否存在
   if (button && image) {
     button.addEventListener('mouseover', () => {
