@@ -180,6 +180,38 @@
     ]
   },
   {
+    "id": "datetime-block",
+    "fields": [
+      {
+        "component": "date-time",
+        "valueType": "date-time",
+        "name": "dateTimeField",
+        "label": "Date and Time",
+        "description": "Select both date and time",
+        "required": true,
+        "placeholder": "YYYY-MM-DD HH:mm:ss"
+      },
+      {
+        "component": "date-time",
+        "valueType": "date",
+        "name": "dateField",
+        "label": "Date Only",
+        "description": "Select date only",
+        "required": true,
+        "placeholder": "YYYY-MM-DD"
+      },
+      {
+        "component": "date-time",
+        "valueType": "time",
+        "name": "timeField",
+        "label": "Time Only",
+        "description": "Select time only",
+        "required": true,
+        "placeholder": "HH:mm:ss"
+      }
+    ]
+  },
+  {
     "id": "fragment",
     "fields": [
       {

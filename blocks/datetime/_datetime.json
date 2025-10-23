@@ -1,0 +1,57 @@
+{
+  "definitions": [
+    {
+      "title": "Date Time Block",
+      "id": "datetime",
+      "plugins": {
+        "xwalk": {
+          "page": {
+            "resourceType": "core/franklin/components/block/v1/block",
+            "template": {
+              "name": "Date Time Block",
+              "model": "datetime-block",
+              "dateTimeField": "2025-10-23T10:00:00",
+              "dateField": "2025-10-23",
+              "timeField": "10:00:00"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "models": [
+    {
+      "id": "datetime-block",
+      "fields": [
+        {
+          "component": "date-time",
+          "valueType": "date-time",
+          "name": "dateTimeField",
+          "label": "Date and Time",
+          "description": "Select both date and time",
+          "required": true,
+          "placeholder": "YYYY-MM-DD HH:mm:ss"
+        },
+        {
+          "component": "date-time",
+          "valueType": "date",
+          "name": "dateField",
+          "label": "Date Only",
+          "description": "Select date only",
+          "required": true,
+          "placeholder": "YYYY-MM-DD"
+        },
+        {
+          "component": "date-time",
+          "valueType": "time",
+          "name": "timeField",
+          "label": "Time Only",
+          "description": "Select time only",
+          "required": true,
+          "placeholder": "HH:mm:ss"
+        }
+      ]
+    }
+  ],
+  "filters": []
+}

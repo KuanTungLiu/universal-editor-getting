@@ -1,0 +1,18 @@
+.datetime-container {
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+.datetime-container > div {
+  margin: 10px 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.datetime-container strong {
+  display: inline-block;
+  width: 100px;
+  color: #666;
+}
