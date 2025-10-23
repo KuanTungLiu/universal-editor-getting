@@ -1,10 +1,22 @@
 export default function decorate(block) {
-  // If the block contains AEM/universal-editor instrumentation (editable richtext),
-  // don't replace the DOM here. The editor relies on paragraphs / data-* attributes
-  // being present so the editor UI can attach. If we are not in editing mode,
-  // transform the textual content into rendered tag elements.
-  if (block.querySelector('[data-aue-resource],[data-richtext-resource],[data-richtext-prop]')) {
-    // leave the DOM intact for the editor to handle
+  // Get the richtext content area if it exists
+  const richTextArea = block.querySelector('[data-aue-type="richtext"][data-aue-prop="text"]');
+  
+  // If we're in the editor (has data-aue attributes)
+  if (block.hasAttribute('data-aue-resource')) {
+    // If we don't have a richtext area yet, create one with default content
+    if (!richTextArea) {
+      const defaultContent = document.createElement('div');
+      defaultContent.setAttribute('data-aue-type', 'richtext');
+      defaultContent.setAttribute('data-aue-prop', 'text');
+      defaultContent.innerHTML = `
+        <p>tag1|/tag1</p>
+        <p>tag2|/tag2</p>
+        <p>tag3|/tag3</p>
+      `;
+      block.appendChild(defaultContent);
+    }
+    // In editor mode, we keep the original content for editing
     return;
   }
 
