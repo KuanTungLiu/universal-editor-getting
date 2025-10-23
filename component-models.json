@@ -279,13 +279,15 @@
         "component": "text",
         "name": "text",
         "label": "Tag Text",
-        "valueType": "string"
+        "valueType": "string",
+        "value":""
       },
       {
         "component": "text",
         "name": "link",
         "label": "Tag Link",
-        "valueType": "string"
+        "valueType": "string",
+        "value":""
       }
     ]
   }
