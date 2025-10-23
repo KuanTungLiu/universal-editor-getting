@@ -17,7 +17,8 @@
       "columns",
       "fragment",
       "teaser",
-      "quote"
+      "quote",
+      "tags"
     ]
   },
   {
@@ -38,7 +39,8 @@
       "text",
       "image",
       "button",
-      "title"
+      "title",
+      "datetime"
     ]
   }
 ]
