@@ -238,11 +238,11 @@
     "id": "tags",
     "fields": [
       {
-        "component": "richtext",
-        "name": "text",
-        "label": "Tags",
+        "component": "aem-tag",
+        "name": "cq:tags",
+        "label": "AEM Tags",
         "valueType": "string",
-        "value": ""
+        "multi": true
       }
     ]
   },

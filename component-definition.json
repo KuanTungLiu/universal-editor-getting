@@ -184,9 +184,10 @@
                 "template": {
                   "name": "Tags",
                   "model": "tags",
-                  "text": {
-                    "content": "<div data-aue-type=\"richtext\" data-aue-prop=\"text\"><p>tag1|/tag1</p><p>tag2|/tag2</p><p>tag3|/tag3</p></div>"
-                  }
+                  "cq:tags": [
+                    "example/tag1",
+                    "example/tag2"
+                  ]
                 }
               }
             }
