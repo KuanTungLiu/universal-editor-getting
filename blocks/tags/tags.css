@@ -1,0 +1,45 @@
+/* blocks/tags/tags.css */
+
+/* 容器樣式 */
+.tags {
+  padding: 20px 0;
+}
+
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 標籤基礎樣式 */
+.tag {
+  display: inline-block;
+  padding: 6px 16px;
+  background-color: #f0f0f0;
+  color: #333;
+  text-decoration: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+/* Hover 效果 */
+.tag:hover {
+  background-color: #e0e0e0;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Active 效果 */
+.tag:active {
+  transform: translateY(0);
+}
+
+/* 如果標籤有自訂顏色 */
+.tag[style*="--tag-color"] {
+  background-color: var(--tag-color);
+  color: white;
+}
