@@ -276,16 +276,9 @@
     "id": "tags",
     "fields": [
       {
-        "component": "text",
-        "name": "tagText",
-        "label": "Tag Text",
-        "valueType": "string",
-        "required": true
-      },
-      {
-        "component": "aem-content",
-        "name": "tagLink",
-        "label": "Tag Link",
+        "component": "richtext",
+        "name": "text",
+        "label": "Tags",
         "valueType": "string"
       }
     ]
