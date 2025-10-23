@@ -1,32 +1,28 @@
 export default function decorate(block) {
-  // 從 block 中獲取文字內容
+  // If the block contains AEM/universal-editor instrumentation (editable richtext),
+  // don't replace the DOM here. The editor relies on paragraphs / data-* attributes
+  // being present so the editor UI can attach. If we are not in editing mode,
+  // transform the textual content into rendered tag elements.
+  if (block.querySelector('[data-aue-resource],[data-richtext-resource],[data-richtext-prop]')) {
+    // leave the DOM intact for the editor to handle
+    return;
+  }
+
+  // Extract plain text content and split into lines for tag parsing
   const content = block.textContent.trim();
+  const lines = content.split('\n').map((l) => l.trim()).filter(Boolean);
 
-  // 按行分割
-  const lines = content.split('\n').filter((line) => line.trim());
-
-  const tags = [];
-
-  // 解析每一行
-  lines.forEach((line) => {
-    // 按 | 分割成文字和連結
+  const tags = lines.map((line) => {
     const parts = line.split('|').map((s) => s.trim());
     const text = parts[0];
     const link = parts[1] || '#';
+    return text ? { text, link } : null;
+  }).filter(Boolean);
 
-    if (text) {
-      tags.push({ text, link });
-    }
-  });
-
-  // 清空原有內容
+  // Clear the block and render the tags for the live site
   block.innerHTML = '';
-
-  // 建立標籤容器
   const container = document.createElement('div');
   container.className = 'tags-container';
-
-  // 為每個標籤建立元素
   tags.forEach((tag) => {
     const tagEl = document.createElement('a');
     tagEl.className = 'tag';
@@ -34,6 +30,5 @@ export default function decorate(block) {
     tagEl.textContent = tag.text;
     container.appendChild(tagEl);
   });
-
   block.appendChild(container);
 }
