@@ -235,6 +235,18 @@
     ]
   },
   {
+    "id": "tags",
+    "fields": [
+      {
+        "component": "richtext",
+        "name": "text",
+        "label": "Tags",
+        "valueType": "string",
+        "value": ""
+      }
+    ]
+  },
+  {
     "id": "teaser",
     "fields": [
       {
@@ -269,18 +281,6 @@
         "name": "textContent_ctaText",
         "label": "CTA label",
         "valueType": "string"
-      }
-    ]
-  },
-  {
-    "id": "tags",
-    "fields": [
-      {
-        "component": "richtext",
-        "name": "text",
-        "label": "Tags",
-        "valueType": "string",
-        "value":""
       }
     ]
   }

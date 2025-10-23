@@ -175,6 +175,22 @@
           }
         },
         {
+          "title": "Tags",
+          "id": "tags",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Tags",
+                  "model": "tags",
+                  "text": "<p>tag1|/tag1</p>\n<p>tag2|/tag2</p>\n<p>tag3|/tag3</p>"
+                }
+              }
+            }
+          }
+        },
+        {
           "title": "Teaser",
           "id": "teaser",
           "plugins": {
@@ -187,21 +203,6 @@
                   "textContent_text": "<h2>Enter a title</h2><p>...and body text here!</p>",
                   "textContent_cta": "/",
                   "textContent_ctaText": "Click me!"
-                }
-              }
-            }
-          }
-        },
-        {
-          "title": "Tags",
-          "id": "tags",
-          "plugins": {
-            "xwalk": {
-              "page": {
-                "resourceType": "core/franklin/components/block/v1/block",
-                "template": {
-                  "name": "Tags",
-                  "model": "tags"
                 }
               }
             }
