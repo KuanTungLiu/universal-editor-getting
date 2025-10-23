@@ -278,7 +278,7 @@
       {
         "component": "richtext",
         "name": "text",
-        "label": "Tags (format: Text | Link, one per line)",
+        "label": "Tags",
         "valueType": "string",
         "value":""
       }
