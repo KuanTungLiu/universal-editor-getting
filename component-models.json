@@ -276,9 +276,15 @@
     "id": "tags",
     "fields": [
       {
-        "component": "richtext",
+        "component": "text",
         "name": "text",
-        "label": "Tags",
+        "label": "Tag Text",
+        "valueType": "string"
+      },
+      {
+        "component": "text",
+        "name": "link",
+        "label": "Tag Link",
         "valueType": "string"
       }
     ]
