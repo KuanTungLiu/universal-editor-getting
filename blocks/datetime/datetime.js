@@ -1,13 +1,11 @@
 function formatDateTime(value, type) {
   if (!value) return '';
-  
   const date = new Date(value);
   const options = {
     datetime: { dateStyle: 'medium', timeStyle: 'medium' },
     date: { dateStyle: 'medium' },
-    time: { timeStyle: 'medium' }
+    time: { timeStyle: 'medium' },
   }[type];
-  
   return new Intl.DateTimeFormat('zh-TW', options).format(date);
 }
 
@@ -19,7 +17,7 @@ export default function decorate(block) {
 
   // Clear existing content
   block.innerHTML = '';
-  
+
   // Create container
   const container = document.createElement('div');
   container.className = 'datetime-container';
