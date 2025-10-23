@@ -1,7 +1,7 @@
 export default function decorate(block) {
   // Get the richtext content area if it exists
   const richTextArea = block.querySelector('[data-aue-type="richtext"][data-aue-prop="text"]');
-  
+
   // If we're in the editor (has data-aue attributes)
   if (block.hasAttribute('data-aue-resource')) {
     // If we don't have a richtext area yet, create one with default content
