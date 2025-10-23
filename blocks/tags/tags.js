@@ -10,9 +10,7 @@ export default function decorate(block) {
       defaultContent.setAttribute('data-aue-type', 'richtext');
       defaultContent.setAttribute('data-aue-prop', 'text');
       defaultContent.innerHTML = `
-        <p>tag1|/tag1</p>
-        <p>tag2|/tag2</p>
-        <p>tag3|/tag3</p>
+        <p>tags</p>
       `;
       block.appendChild(defaultContent);
     }
