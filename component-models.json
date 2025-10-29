@@ -142,6 +142,209 @@
     ]
   },
   {
+    "id": "banner",
+    "fields": [
+      {
+        "component": "text",
+        "valueType": "string",
+        "name": "title",
+        "Label": "Title",
+        "value": "",
+        "required": true
+      },
+      {
+        "component": "richtext",
+        "name": "textContent_text",
+        "label": "Text",
+        "valueType": "string"
+      },
+      {
+        "id": "image",
+        "fields": [
+          {
+            "component": "reference",
+            "name": "image",
+            "label": "Image",
+            "required": true
+          },
+          {
+            "component": "text",
+            "name": "imageAlt",
+            "label": "Alt Text"
+          }
+        ]
+      },
+      {
+        "id": "buttonGroupConfig",
+        "fields": [
+          {
+            "component": "select",
+            "name": "buttonCount",
+            "label": "Number / 按鈕個數",
+            "options": [
+              {
+                "name": "無按鈕",
+                "value": "none"
+              },
+              {
+                "name": "只有主按鈕",
+                "value": "main-only"
+              },
+              {
+                "name": "主按鈕及次按鈕",
+                "value": "main-and-sub"
+              }
+            ]
+          },
+          {
+            "component": "fieldset",
+            "name": "mainButtonSettings",
+            "label": "Main Button / 主要按鈕設定",
+            "showIf": "buttonCount != 'none'",
+            "fields": [
+              {
+                "component": "text",
+                "name": "mainButtonText",
+                "label": "Text / 主要按鈕文字"
+              },
+              {
+                "component": "aem-content",
+                "name": "mainButtonLink",
+                "label": "Main Button Link / 主要按鈕連結"
+              },
+              {
+                "component": "text",
+                "name": "mainButtonLinkTitle",
+                "label": "Link Title / 主要按鈕連結標題"
+              }
+            ]
+          },
+          {
+            "component": "fieldset",
+            "name": "subButtonSettings",
+            "label": "Sub Button / 次要按鈕設定",
+            "showIf": "buttonCount == 'main-and-sub'",
+            "fields": [
+              {
+                "component": "text",
+                "name": "subButtonText",
+                "label": "Text / 次要按鈕文字"
+              },
+              {
+                "component": "aem-content",
+                "name": "subButtonLink",
+                "label": "Sub Button Link / 次要按鈕連結"
+              },
+              {
+                "component": "text",
+                "name": "subButtonLinkTitle",
+                "label": "Link Title / 次要按鈕連結標題"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "title",
+        "Label": "Title",
+        "value": "",
+        "required": true
+      },
+      {
+        "component": "richtext",
+        "name": "textContent_text",
+        "label": "Text",
+        "valueType": "string"
+      },
+      {
+        "id": "image",
+        "fields": [
+          {
+            "component": "reference",
+            "name": "image",
+            "label": "Image",
+            "required": true
+          },
+          {
+            "component": "text",
+            "name": "imageAlt",
+            "label": "Alt Text"
+          }
+        ]
+      },
+      {
+        "id": "buttonGroupConfig",
+        "fields": [
+          {
+            "component": "select",
+            "name": "buttonCount",
+            "label": "Number / 按鈕個數",
+            "options": [
+              {
+                "name": "無按鈕",
+                "value": "none"
+              },
+              {
+                "name": "只有主按鈕",
+                "value": "main-only"
+              },
+              {
+                "name": "主按鈕及次按鈕",
+                "value": "main-and-sub"
+              }
+            ]
+          },
+          {
+            "component": "fieldset",
+            "name": "mainButtonSettings",
+            "label": "Main Button / 主要按鈕設定",
+            "showIf": "buttonCount != 'none'",
+            "fields": [
+              {
+                "component": "text",
+                "name": "mainButtonText",
+                "label": "Text / 主要按鈕文字"
+              },
+              {
+                "component": "aem-content",
+                "name": "mainButtonLink",
+                "label": "Main Button Link / 主要按鈕連結"
+              },
+              {
+                "component": "text",
+                "name": "mainButtonLinkTitle",
+                "label": "Link Title / 主要按鈕連結標題"
+              }
+            ]
+          },
+          {
+            "component": "fieldset",
+            "name": "subButtonSettings",
+            "label": "Sub Button / 次要按鈕設定",
+            "showIf": "buttonCount == 'main-and-sub'",
+            "fields": [
+              {
+                "component": "text",
+                "name": "subButtonText",
+                "label": "Text / 次要按鈕文字"
+              },
+              {
+                "component": "aem-content",
+                "name": "subButtonLink",
+                "label": "Sub Button Link / 次要按鈕連結"
+              },
+              {
+                "component": "text",
+                "name": "subButtonLinkTitle",
+                "label": "Link Title / 次要按鈕連結標題"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "id": "card",
     "fields": [
       {

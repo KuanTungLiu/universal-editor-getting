@@ -1,0 +1,105 @@
+.banner {
+  background: linear-gradient(135deg, #e8f5f3 0%, #f0f8ff 100%);
+  padding: 60px 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.banner-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.banner-text h1 {
+  color: #2db88d;
+  font-size: 48px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.banner-text p {
+  color: #666;
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+/* 按鈕樣式 */
+.banner-buttons {
+  display: flex;
+  gap: 20px;
+}
+
+.btn {
+  border: none;
+  border-radius: 30px;
+  padding: 12px 30px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #42d6a4, #2db88d);
+  color: white;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background-color: white;
+  color: #2db88d;
+  border: 1px solid #2db88d;
+}
+
+.btn-secondary:hover {
+  background-color: #e6f7f1;
+}
+
+/* 圖片樣式 */
+.banner-image {
+  flex-shrink: 0;
+}
+
+.banner-image img {
+  width: 400px;
+  height: auto;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .banner-content {
+    flex-direction: column;
+    text-align: center;
+    align-items: center; 
+  }
+
+  .banner-text h1 {
+    font-size: 32px;
+  }
+
+  .banner-buttons {
+    justify-content: center; 
+    flex-wrap: wrap; 
+  }
+
+  .banner-buttons .btn {
+    margin: 5px 0;
+  }
+
+  .banner-image {
+    margin-top: 30px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .banner-image img {
+    width: 220px;
+    height: auto;
+  }
+}

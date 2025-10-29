@@ -83,6 +83,21 @@
       "id": "blocks",
       "components": [
         {
+          "title": "Banner",
+          "id": "banner",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/banner/v1/banner",
+                "template": {
+                  "name": "Banner",
+                  "model": "banner"
+                }
+              }
+            }
+          }
+        },
+        {
           "title": "Cards",
           "id": "cards",
           "plugins": {
