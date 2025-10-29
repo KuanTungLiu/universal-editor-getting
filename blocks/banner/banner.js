@@ -16,9 +16,7 @@
   This file is intentionally small and dependency-free so it can be used both
   on the editor preview and on the live site.
 */
-(function () {
-  'use strict';
-
+(() => {
   function setVisibility(el, visible) {
     if (!el) return;
     el.style.display = visible ? '' : 'none';
@@ -55,15 +53,15 @@
     applyButtonState(banner, initial);
 
     if (select) {
-      select.addEventListener('change', function () {
+      select.addEventListener('change', () => {
         applyButtonState(banner, select.value);
       });
     }
 
     // If the banner is edited live (e.g. inside a CMS editor), some tool may
     // update attributes — observe for attribute changes to keep state in sync.
-    const mo = new MutationObserver(function (records) {
-      records.forEach(function (r) {
+    const mo = new MutationObserver((records) => {
+      records.forEach((r) => {
         if (r.type === 'attributes' && r.attributeName === 'data-button-count') {
           applyButtonState(banner, banner.getAttribute('data-button-count') || (select && select.value) || 'none');
         }
@@ -89,4 +87,4 @@
   } catch (e) {
     // ignore in restrictive environments
   }
-}());
+})();
