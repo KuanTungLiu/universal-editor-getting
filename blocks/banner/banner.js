@@ -1,90 +1,122 @@
-/*
-  Minimal banner behavior script
+/**
+ * Banner Block for AEM Edge Delivery Services
+ * Supports dynamic button rendering based on buttonCount selection
+ */
 
-  Responsibilities:
-  - Listen to the "buttonCount" select (or data attribute) and show/hide
-    main/sub buttons accordingly.
-  - Supports three states for buttonCount: "none", "main-only", "main-and-sub".
+function createButton(text, link, title, isPrimary = true) {
+  if (!text || !link) return null;
 
-  Expected HTML conventions (non-invasive):
-  - The banner root has class `.banner`.
-  - Main button should have class `.btn-primary` (or attribute `[data-main-button]`).
-  - Secondary button should have class `.btn-secondary` (or attribute `[data-sub-button]`).
-  - The button-count control is a <select name="buttonCount"> inside the banner
-    (or any element with attribute `data-button-count-select`).
+  const button = document.createElement('a');
+  button.className = isPrimary ? 'btn-primary' : 'btn-secondary';
+  button.href = link;
+  button.textContent = text;
+  if (title) {
+    button.title = title;
+  }
+  return button;
+}
 
-  This file is intentionally small and dependency-free so it can be used both
-  on the editor preview and on the live site.
-*/
-(() => {
-  function setVisibility(el, visible) {
-    if (!el) return;
-    el.style.display = visible ? '' : 'none';
+export default function decorate(block) {
+  // If in editor mode, don't modify structure
+  if (block.hasAttribute('data-aue-resource')) {
+    return;
   }
 
-  function applyButtonState(banner, state) {
-    const main = banner.querySelector('.btn-primary') || banner.querySelector('[data-main-button]');
-    const sub = banner.querySelector('.btn-secondary') || banner.querySelector('[data-sub-button]');
+  // Parse block content
+  const rows = [...block.children];
+  const data = {};
 
-    switch (state) {
-      case 'main-only':
-        setVisibility(main, true);
-        setVisibility(sub, false);
-        break;
-      case 'main-and-sub':
-        setVisibility(main, true);
-        setVisibility(sub, true);
-        break;
-      case 'none':
-      default:
-        setVisibility(main, false);
-        setVisibility(sub, false);
-        break;
+  rows.forEach((row) => {
+    const cells = [...row.children];
+    if (cells.length >= 2) {
+      const key = cells[0].textContent.trim();
+      const value = cells[1].textContent.trim() || cells[1].innerHTML.trim();
+      data[key] = value;
+    }
+  });
+
+  // Extract values
+  const title = data.title || '';
+  const subtitle = data.subtitle || '';
+  const image = data.image || '';
+  const imageAlt = data.imageAlt || '';
+  const buttonCount = data.buttonCount || 'none';
+
+  // Main button
+  const mainButtonText = data.mainButtonText || '';
+  const mainButtonLink = data.mainButtonLink || '';
+  const mainButtonLinkTitle = data.mainButtonLinkTitle || '';
+
+  // Sub button
+  const subButtonText = data.subButtonText || '';
+  const subButtonLink = data.subButtonLink || '';
+  const subButtonLinkTitle = data.subButtonLinkTitle || '';
+
+  // Clear and rebuild
+  block.innerHTML = '';
+
+  // Container
+  const container = document.createElement('div');
+  container.className = 'banner-container';
+
+  // Image (background or foreground)
+  if (image) {
+    const imgEl = document.createElement('img');
+    imgEl.src = image;
+    imgEl.alt = imageAlt;
+    imgEl.className = 'banner-image';
+    container.appendChild(imgEl);
+  }
+
+  // Content wrapper
+  const content = document.createElement('div');
+  content.className = 'banner-content';
+
+  // Title
+  if (title) {
+    const titleEl = document.createElement('h1');
+    titleEl.className = 'banner-title';
+    titleEl.textContent = title;
+    content.appendChild(titleEl);
+  }
+
+  // Subtitle
+  if (subtitle) {
+    const subtitleEl = document.createElement('div');
+    subtitleEl.className = 'banner-subtitle';
+    subtitleEl.innerHTML = subtitle;
+    content.appendChild(subtitleEl);
+  }
+
+  // Buttons based on buttonCount
+  if (buttonCount !== 'none') {
+    const buttonWrapper = document.createElement('div');
+    buttonWrapper.className = 'banner-buttons';
+
+    // Main button
+    if (buttonCount === 'main-only' || buttonCount === 'main-and-sub') {
+      const mainBtn = createButton(mainButtonText, mainButtonLink, mainButtonLinkTitle, true);
+      if (mainBtn) {
+        buttonWrapper.appendChild(mainBtn);
+      }
+    }
+
+    // Sub button
+    if (buttonCount === 'main-and-sub') {
+      const subBtn = createButton(subButtonText, subButtonLink, subButtonLinkTitle, false);
+      if (subBtn) {
+        buttonWrapper.appendChild(subBtn);
+      }
+    }
+
+    if (buttonWrapper.children.length > 0) {
+      content.appendChild(buttonWrapper);
     }
   }
 
-  function initBanner(banner) {
-    if (!banner) return;
+  container.appendChild(content);
+  block.appendChild(container);
 
-    const select = banner.querySelector('select[name="buttonCount"]') || banner.querySelector('[data-button-count-select]');
-
-    // initial state: check data attribute, select value, or default to 'none'
-    const initial = (select && select.value) || banner.getAttribute('data-button-count') || 'none';
-    applyButtonState(banner, initial);
-
-    if (select) {
-      select.addEventListener('change', () => {
-        applyButtonState(banner, select.value);
-      });
-    }
-
-    // If the banner is edited live (e.g. inside a CMS editor), some tool may
-    // update attributes — observe for attribute changes to keep state in sync.
-    const mo = new MutationObserver((records) => {
-      records.forEach((r) => {
-        if (r.type === 'attributes' && r.attributeName === 'data-button-count') {
-          applyButtonState(banner, banner.getAttribute('data-button-count') || (select && select.value) || 'none');
-        }
-      });
-    });
-    mo.observe(banner, { attributes: true });
-  }
-
-  // Initialize on DOMContentLoaded and for banners added later
-  function initAll() {
-    document.querySelectorAll('.banner').forEach(initBanner);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAll);
-  } else {
-    initAll();
-  }
-
-  // Expose for testing/debugging (non-enumerable)
-  try {
-    Object.defineProperty(window, 'BannerControls', { value: { initBanner }, configurable: true });
-  } catch (e) {
-    // ignore in restrictive environments
-  }
-})();
+  // Store state as data attribute for debugging
+  block.setAttribute('data-button-count', buttonCount);
+}
