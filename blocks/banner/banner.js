@@ -1,28 +1,5 @@
-/**
- * Banner Block for AEM Edge Delivery Services
- * Supports dynamic button rendering based on buttonCount selection
- */
-
-function createButton(text, link, title, isPrimary = true) {
-  if (!text || !link) return null;
-
-  const button = document.createElement('a');
-  button.className = isPrimary ? 'btn-primary' : 'btn-secondary';
-  button.href = link;
-  button.textContent = text;
-  if (title) {
-    button.title = title;
-  }
-  return button;
-}
-
 export default function decorate(block) {
-  // If in editor mode, don't modify structure
-  if (block.hasAttribute('data-aue-resource')) {
-    return;
-  }
-
-  // Parse block content
+  // Parse block data
   const rows = [...block.children];
   const data = {};
 
@@ -36,87 +13,79 @@ export default function decorate(block) {
   });
 
   // Extract values
-  const title = data.title || '';
-  const subtitle = data.subtitle || '';
-  const image = data.image || '';
-  const imageAlt = data.imageAlt || '';
-  const buttonCount = data.buttonCount || 'none';
+  const {
+    title = '',
+    subtitle = '',
+    image = '',
+    imageAlt = '',
+    buttonCount = 'none',
+    mainButtonText = '',
+    mainButtonLink = '',
+    subButtonText = '',
+    subButtonLink = '',
+  } = data;
 
-  // Main button
-  const mainButtonText = data.mainButtonText || '';
-  const mainButtonLink = data.mainButtonLink || '';
-  const mainButtonLinkTitle = data.mainButtonLinkTitle || '';
-
-  // Sub button
-  const subButtonText = data.subButtonText || '';
-  const subButtonLink = data.subButtonLink || '';
-  const subButtonLinkTitle = data.subButtonLinkTitle || '';
-
-  // Clear and rebuild
+  // Clear block
   block.innerHTML = '';
 
-  // Container
+  // Create container
   const container = document.createElement('div');
   container.className = 'banner-container';
 
-  // Image (background or foreground)
+  // Image
   if (image) {
-    const imgEl = document.createElement('img');
-    imgEl.src = image;
-    imgEl.alt = imageAlt;
-    imgEl.className = 'banner-image';
-    container.appendChild(imgEl);
+    const img = document.createElement('img');
+    img.src = image;
+    img.alt = imageAlt;
+    img.className = 'banner-image';
+    container.appendChild(img);
   }
 
-  // Content wrapper
+  // Content
   const content = document.createElement('div');
   content.className = 'banner-content';
 
   // Title
   if (title) {
-    const titleEl = document.createElement('h1');
-    titleEl.className = 'banner-title';
-    titleEl.textContent = title;
-    content.appendChild(titleEl);
+    const h1 = document.createElement('h1');
+    h1.textContent = title;
+    content.appendChild(h1);
   }
 
   // Subtitle
   if (subtitle) {
-    const subtitleEl = document.createElement('div');
-    subtitleEl.className = 'banner-subtitle';
-    subtitleEl.innerHTML = subtitle;
-    content.appendChild(subtitleEl);
+    const sub = document.createElement('div');
+    sub.className = 'banner-subtitle';
+    sub.innerHTML = subtitle;
+    content.appendChild(sub);
   }
 
-  // Buttons based on buttonCount
-  if (buttonCount !== 'none') {
-    const buttonWrapper = document.createElement('div');
-    buttonWrapper.className = 'banner-buttons';
+  // Buttons
+  const buttonsDiv = document.createElement('div');
+  buttonsDiv.className = 'banner-buttons';
 
-    // Main button
-    if (buttonCount === 'main-only' || buttonCount === 'main-and-sub') {
-      const mainBtn = createButton(mainButtonText, mainButtonLink, mainButtonLinkTitle, true);
-      if (mainBtn) {
-        buttonWrapper.appendChild(mainBtn);
-      }
-    }
+  // Main button
+  if ((buttonCount === 'main-only' || buttonCount === 'main-and-sub') && mainButtonText && mainButtonLink) {
+    const mainBtn = document.createElement('a');
+    mainBtn.className = 'btn-primary';
+    mainBtn.href = mainButtonLink;
+    mainBtn.textContent = mainButtonText;
+    buttonsDiv.appendChild(mainBtn);
+  }
 
-    // Sub button
-    if (buttonCount === 'main-and-sub') {
-      const subBtn = createButton(subButtonText, subButtonLink, subButtonLinkTitle, false);
-      if (subBtn) {
-        buttonWrapper.appendChild(subBtn);
-      }
-    }
+  // Sub button
+  if (buttonCount === 'main-and-sub' && subButtonText && subButtonLink) {
+    const subBtn = document.createElement('a');
+    subBtn.className = 'btn-secondary';
+    subBtn.href = subButtonLink;
+    subBtn.textContent = subButtonText;
+    buttonsDiv.appendChild(subBtn);
+  }
 
-    if (buttonWrapper.children.length > 0) {
-      content.appendChild(buttonWrapper);
-    }
+  if (buttonsDiv.children.length > 0) {
+    content.appendChild(buttonsDiv);
   }
 
   container.appendChild(content);
   block.appendChild(container);
-
-  // Store state as data attribute for debugging
-  block.setAttribute('data-button-count', buttonCount);
 }
