@@ -4,10 +4,7 @@
  */
 
 export default function decorate(block) {
-  // If in editor mode, don't modify structure
-  if (block.hasAttribute('data-aue-resource')) {
-    return;
-  }
+  const isEditor = block.hasAttribute('data-aue-resource');
 
   // Parse block content
   const rows = [...block.children];
@@ -91,17 +88,25 @@ export default function decorate(block) {
 
     // Helper function to create button
     const createButton = (text, link, type) => {
-      if (!text || !link) return null;
-
       const wrapper = document.createElement('div');
       wrapper.className = 'button-wrapper';
 
-      const button = document.createElement('a');
-      button.className = `button ${type}`;
-      button.href = link;
-      button.textContent = text;
+      if (isEditor) {
+        // In editor mode, create a button element
+        const button = document.createElement('button');
+        button.className = `button ${type || 'primary'}`;
+        button.textContent = text || '按鈕';
+        wrapper.appendChild(button);
+      } else {
+        // In runtime mode, create an anchor element
+        if (!text || !link) return null;
+        const button = document.createElement('a');
+        button.className = `button ${type || 'primary'}`;
+        button.href = link;
+        button.textContent = text;
+        wrapper.appendChild(button);
+      }
 
-      wrapper.appendChild(button);
       return wrapper;
     };
 
@@ -121,7 +126,7 @@ export default function decorate(block) {
       }
     }
 
-    // Only add button container if it has buttons
+    // Add button container to content if we have buttons
     if (buttonContainer.children.length > 0) {
       content.appendChild(buttonContainer);
     }

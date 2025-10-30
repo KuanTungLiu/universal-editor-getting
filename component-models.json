@@ -180,7 +180,7 @@
         "options": [
           {
             "name": "無按鈕",
-            "value": ""
+            "value": "none"
           },
           {
             "name": "只有主按鈕",
