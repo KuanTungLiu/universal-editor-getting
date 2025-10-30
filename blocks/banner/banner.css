@@ -42,37 +42,42 @@
   display: inline-block;
 }
 
-.button {
+.button-container .button {
   display: inline-block;
   box-sizing: border-box;
-  padding: 5px 20px;
+  padding: 12px 30px;
   text-align: center;
   text-decoration: none;
-  font-size: var(--body-font-size-s);
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   border-radius: 30px;
   border: 2px solid transparent;
   transition: all 0.3s ease;
+  min-width: 150px;
+  margin: 0;
 }
 
-.button.primary {
+.button-container .button.primary {
   background: linear-gradient(135deg, #42d6a4, #2db88d);
   color: white;
+  border: none;
 }
 
-.button.primary:hover {
+.button-container .button.primary:hover {
   opacity: 0.9;
+  text-decoration: none;
 }
 
-.button.secondary {
+.button-container .button.secondary {
   background-color: white;
   color: #2db88d;
   border: 2px solid #2db88d;
 }
 
-.button.secondary:hover {
+.button-container .button.secondary:hover {
   background-color: #e6f7f1;
+  text-decoration: none;
 }
 
 /* 圖片樣式 */

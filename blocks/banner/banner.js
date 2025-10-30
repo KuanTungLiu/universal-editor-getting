@@ -20,16 +20,17 @@ export default function decorate(block) {
       const cell = cells[1];
 
       // 特殊處理按鈕相關欄位
-      if (key.includes('ButtonLink')) {
+      if (key.includes('ButtonLink') && !key.includes('Title') && !key.includes('Type')) {
         const link = cell.querySelector('a');
         if (link) {
           data[key] = link.getAttribute('href');
-          // 如果按鈕文字還沒設定，使用連結的文字
-          const textKey = key.replace('Link', 'Text');
-          if (!data[textKey]) {
-            data[textKey] = link.textContent.trim();
-          }
         }
+      } else if (key.includes('ButtonLinkText')) {
+        data[key] = cell.textContent.trim();
+      } else if (key.includes('ButtonLinkTitle')) {
+        data[key] = cell.textContent.trim();
+      } else if (key.includes('ButtonLinkType')) {
+        data[key] = cell.textContent.trim() || 'primary';
       } else {
         data[key] = cell.textContent.trim();
       }
@@ -44,16 +45,16 @@ export default function decorate(block) {
   const buttonCount = data.buttonCount || 'none';
 
   // Main button
-  const mainButtonLink = data.mainButtonLink || '';
+  const mainButtonLink = data.mainButtonLink || '#';
   const mainButtonText = data.mainButtonLinkText || '';
   const mainButtonTitle = data.mainButtonLinkTitle || '';
-  const mainButtonType = data.mainButtonLinkType || 'primary';
+  const mainButtonType = (data.mainButtonLinkType === 'secondary') ? 'secondary' : 'primary';
 
   // Sub button
-  const subButtonLink = data.subButtonLink || '';
+  const subButtonLink = data.subButtonLink || '#';
   const subButtonText = data.subButtonLinkText || '';
   const subButtonTitle = data.subButtonLinkTitle || '';
-  const subButtonType = data.subButtonLinkType || 'secondary';
+  const subButtonType = (data.subButtonLinkType === 'primary') ? 'primary' : 'secondary';
 
   // Clear and rebuild
   block.innerHTML = '';
@@ -136,9 +137,6 @@ export default function decorate(block) {
   }
 
   // Add container to block
-  container.appendChild(content);
-  block.appendChild(container);
-
   container.appendChild(content);
   block.appendChild(container);
 }
