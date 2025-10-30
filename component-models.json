@@ -172,9 +172,30 @@
         "required": false
       },
       {
+        "component": "select",
+        "name": "ButtonType",
+        "label": "按鈕選項",
+        "value": "none",
+        "options": [
+          {
+            "name": "無按鈕",
+            "value": "none"
+          },
+          {
+            "name": "主要按鈕樣式",
+            "value": "primary"
+          },
+          {
+            "name": "次要按鈕樣式",
+            "value": "secondary"
+          }
+        ]
+      },
+      {
         "component": "fieldset",
         "name": "primaryButtonSettings",
         "label": "Primary Button / 主要按鈕設定",
+        "value": "primary",
         "fields": [
           {
             "component": "aem-content",
@@ -185,7 +206,7 @@
           {
             "component": "text",
             "name": "primaryButtonText",
-            "label": "Primary Button Text / 主要按鈕文字",
+            "label": "重要公告",
             "required": false
           },
           {
@@ -221,22 +242,6 @@
             "name": "secondaryButtonText",
             "label": "Secondary Button Text / 次要按鈕文字",
             "required": false
-          },
-          {
-            "component": "select",
-            "name": "secondaryButtonType",
-            "label": "Secondary Button Type / 次要按鈕樣式",
-            "value": "secondary",
-            "options": [
-              {
-                "name": "主要按鈕樣式",
-                "value": "primary"
-              },
-              {
-                "name": "次要按鈕樣式",
-                "value": "secondary"
-              }
-            ]
           }
         ]
       }
