@@ -7,7 +7,7 @@ function createButton(text, link, title, isPrimary = true) {
   if (!text || !link) return null;
 
   const button = document.createElement('a');
-  button.className = isPrimary ? 'btn-primary' : 'btn-secondary';
+  button.className = `btn ${isPrimary ? 'btn-primary' : 'btn-secondary'}`;
   button.href = link;
   button.textContent = text;
   if (title) {
@@ -59,6 +59,10 @@ export default function decorate(block) {
   const container = document.createElement('div');
   container.className = 'banner-container';
 
+  // Content wrapper
+  const content = document.createElement('div');
+  content.className = 'banner-content';
+
   // Image (background or foreground)
   if (image) {
     const imgEl = document.createElement('img');
@@ -67,10 +71,6 @@ export default function decorate(block) {
     imgEl.className = 'banner-image';
     container.appendChild(imgEl);
   }
-
-  // Content wrapper
-  const content = document.createElement('div');
-  content.className = 'banner-content';
 
   // Title
   if (title) {
@@ -109,6 +109,7 @@ export default function decorate(block) {
       }
     }
 
+    // Only add button wrapper if it has buttons
     if (buttonWrapper.children.length > 0) {
       content.appendChild(buttonWrapper);
     }
@@ -116,7 +117,4 @@ export default function decorate(block) {
 
   container.appendChild(content);
   block.appendChild(container);
-
-  // Store state as data attribute for debugging
-  block.setAttribute('data-button-count', buttonCount);
 }

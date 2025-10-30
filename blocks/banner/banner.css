@@ -5,26 +5,30 @@
   overflow: hidden;
 }
 
-.banner-content {
+.banner-container {
   max-width: 1200px;
   margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
-.banner-text h1 {
+.banner-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.banner-title {
   color: #2db88d;
   font-size: 48px;
   font-weight: bold;
-  margin-bottom: 20px;
+  margin: 0 0 10px;
 }
 
-.banner-text p {
+.banner-subtitle {
   color: #666;
   font-size: 16px;
   line-height: 1.6;
-  margin-bottom: 30px;
+  margin: 0 0 20px;
 }
 
 /* 按鈕樣式 */
