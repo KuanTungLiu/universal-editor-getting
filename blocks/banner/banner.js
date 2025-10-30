@@ -4,29 +4,31 @@
  */
 
 function createButton(text, link, title, isPrimary = true) {
-  // 確保至少有文字
   if (!text) return null;
 
-  const button = document.createElement('a');
-  button.className = `btn ${isPrimary ? 'btn-primary' : 'btn-secondary'}`;
+  // Create button container
+  const buttonContainer = document.createElement('div');
+  buttonContainer.className = 'button-container';
 
-  // 如果有連結就加入，沒有就使用 # 作為預設
-  button.href = link || '#';
-  button.textContent = text;
-
+  // Create link
+  const buttonLink = document.createElement('a');
+  buttonLink.className = 'button';
+  if (isPrimary) {
+    buttonLink.classList.add('primary');
+  } else {
+    buttonLink.classList.add('secondary');
+  }
+  
+  buttonLink.href = link || '#';
+  buttonLink.textContent = text;
+  
   if (title) {
-    button.title = title;
+    buttonLink.title = title;
   }
-
-  // 如果沒有真實連結，防止點擊行為
-  if (!link) {
-    button.addEventListener('click', (e) => e.preventDefault());
-  }
-
-  return button;
-}
-
-export default function decorate(block) {
+  
+  buttonContainer.appendChild(buttonLink);
+  return buttonContainer;
+}export default function decorate(block) {
   // If in editor mode, don't modify structure
   if (block.hasAttribute('data-aue-resource')) {
     return;
@@ -40,12 +42,21 @@ export default function decorate(block) {
     const cells = [...row.children];
     if (cells.length >= 2) {
       const key = cells[0].textContent.trim();
-      if (key.includes('ButtonText')) {
-        data[key] = cells[1].textContent.trim();
-      } else if (key.includes('ButtonLink')) {
-        data[key] = cells[1].querySelector('a')?.getAttribute('href') || '';
+      const cell = cells[1];
+      
+      // 特殊處理按鈕相關欄位
+      if (key.includes('ButtonLink')) {
+        const link = cell.querySelector('a');
+        if (link) {
+          data[key] = link.getAttribute('href');
+          // 如果按鈕文字還沒設定，使用連結的文字
+          const textKey = key.replace('Link', 'Text');
+          if (!data[textKey]) {
+            data[textKey] = link.textContent.trim();
+          }
+        }
       } else {
-        data[key] = cells[1].textContent.trim() || cells[1].innerHTML.trim();
+        data[key] = cell.textContent.trim();
       }
     }
   });
