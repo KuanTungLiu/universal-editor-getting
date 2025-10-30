@@ -18,17 +18,17 @@ function createButton(text, link, title, isPrimary = true) {
   } else {
     buttonLink.classList.add('secondary');
   }
-  
+
   buttonLink.href = link || '#';
   buttonLink.textContent = text;
-  
+
   if (title) {
     buttonLink.title = title;
   }
-  
+
   buttonContainer.appendChild(buttonLink);
   return buttonContainer;
-}export default function decorate(block) {
+} export default function decorate(block) {
   // If in editor mode, don't modify structure
   if (block.hasAttribute('data-aue-resource')) {
     return;
@@ -43,7 +43,7 @@ function createButton(text, link, title, isPrimary = true) {
     if (cells.length >= 2) {
       const key = cells[0].textContent.trim();
       const cell = cells[1];
-      
+
       // 特殊處理按鈕相關欄位
       if (key.includes('ButtonLink')) {
         const link = cell.querySelector('a');
