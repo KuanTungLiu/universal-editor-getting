@@ -183,67 +183,15 @@
           },
           {
             "name": "主要按鈕",
-            "value": "primary",
-            "component": "button"
+            "value": "重要公告",
+            "component": "aem-content",
+            "label": "link"
           },
           {
             "name": "主按鈕及次按鈕",
-            "value": "secondary",
-            "component": "button"
-          }
-        ]
-      },
-      {
-        "component": "fieldset",
-        "name": "primaryButtonSettings",
-        "label": "Primary Button / 主要按鈕設定",
-        "value": "primary",
-        "fields": [
-          {
+            "value": "新聞直播",
             "component": "aem-content",
-            "name": "primaryButtonLink",
-            "label": "Primary Button Link / 主要按鈕連結",
-            "required": false
-          },
-          {
-            "component": "text",
-            "name": "primaryButtonText",
-            "label": "重要公告",
-            "required": false
-          },
-          {
-            "component": "select",
-            "name": "primaryButtonType",
-            "label": "Primary Button Type / 主要按鈕樣式",
-            "options": [
-              {
-                "name": "主要按鈕樣式",
-                "value": "primary"
-              },
-              {
-                "name": "次要按鈕樣式",
-                "value": "secondary"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "component": "fieldset",
-        "name": "secondaryButtonSettings",
-        "label": "Secondary Button / 次要按鈕設定",
-        "fields": [
-          {
-            "component": "aem-content",
-            "name": "secondaryButtonLink",
-            "label": "Secondary Button Link / 次要按鈕連結",
-            "required": false
-          },
-          {
-            "component": "text",
-            "name": "secondaryButtonText",
-            "label": "Secondary Button Text / 次要按鈕文字",
-            "required": false
+            "label": "link"
           }
         ]
       }
