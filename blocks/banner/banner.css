@@ -17,11 +17,11 @@
   gap: 20px;
 }
 
-.banner-title {
+.banner-text h1 {
   color: #2db88d;
   font-size: 48px;
   font-weight: bold;
-  margin: 0 0 10px;
+  margin-bottom: 20px;
 }
 
 .banner-subtitle {
@@ -80,9 +80,9 @@
 }
 
 .banner-image img {
-  width: 400px;
-  height: auto;
-  display: block;
+  margin-top: 30px;
+  justify-content: center;
+  display: flex;
 }
 
 @media (width <= 768px) {
