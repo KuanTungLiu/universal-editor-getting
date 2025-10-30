@@ -38,11 +38,7 @@
   margin-top: 20px;
 }
 
-.button-container {
-  display: inline-block;
-}
-
-.button-container .button {
+.banner-buttons .button {
   display: inline-block;
   box-sizing: border-box;
   padding: 12px 30px;
@@ -52,32 +48,30 @@
   font-weight: 600;
   cursor: pointer;
   border-radius: 30px;
-  border: 2px solid transparent;
+  border: none;
   transition: all 0.3s ease;
   min-width: 150px;
   margin: 0;
+  background: none;
 }
 
-.button-container .button.primary {
+.banner-buttons .button.primary {
   background: linear-gradient(135deg, #42d6a4, #2db88d);
   color: white;
-  border: none;
 }
 
-.button-container .button.primary:hover {
+.banner-buttons .button.primary:hover {
   opacity: 0.9;
-  text-decoration: none;
 }
 
-.button-container .button.secondary {
+.banner-buttons .button.secondary {
   background-color: white;
   color: #2db88d;
   border: 2px solid #2db88d;
 }
 
-.button-container .button.secondary:hover {
+.banner-buttons .button.secondary:hover {
   background-color: #e6f7f1;
-  text-decoration: none;
 }
 
 /* 圖片樣式 */

@@ -173,6 +173,22 @@
       },
       {
         "component": "select",
+        "name": "bannerType",
+        "label": "Banner Type / Banner類型",
+        "required": true,
+        "options": [
+          {
+            "name": "重要公告",
+            "value": "announcement"
+          },
+          {
+            "name": "新聞直播",
+            "value": "news"
+          }
+        ]
+      },
+      {
+        "component": "select",
         "name": "Button",
         "label": "Button / 按鈕選項",
         "value": "none",

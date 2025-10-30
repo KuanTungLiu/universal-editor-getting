@@ -1,6 +1,6 @@
 /**
  * Banner Block for AEM Edge Delivery Services
- * Supports dynamic button rendering based on buttonCount selection
+ * Supports banner type selection with announcement and news buttons
  */
 
 export default function decorate(block) {
@@ -18,22 +18,7 @@ export default function decorate(block) {
     if (cells.length >= 2) {
       const key = cells[0].textContent.trim();
       const cell = cells[1];
-
-      // 特殊處理按鈕相關欄位
-      if (key.includes('ButtonLink') && !key.includes('Title') && !key.includes('Type')) {
-        const link = cell.querySelector('a');
-        if (link) {
-          data[key] = link.getAttribute('href');
-        }
-      } else if (key.includes('ButtonLinkText')) {
-        data[key] = cell.textContent.trim();
-      } else if (key.includes('ButtonLinkTitle')) {
-        data[key] = cell.textContent.trim();
-      } else if (key.includes('ButtonLinkType')) {
-        data[key] = cell.textContent.trim() || 'primary';
-      } else {
-        data[key] = cell.textContent.trim();
-      }
+      data[key] = cell.textContent.trim();
     }
   });
 
@@ -42,19 +27,6 @@ export default function decorate(block) {
   const subtitle = data.subtitle || '';
   const image = data.image || '';
   const imageAlt = data.imageAlt || '';
-  const buttonCount = data.buttonCount || 'none';
-
-  // Main button
-  const mainButtonLink = data.mainButtonLink || '#';
-  const mainButtonText = data.mainButtonLinkText || '';
-  const mainButtonTitle = data.mainButtonLinkTitle || '';
-  const mainButtonType = (data.mainButtonLinkType === 'secondary') ? 'secondary' : 'primary';
-
-  // Sub button
-  const subButtonLink = data.subButtonLink || '#';
-  const subButtonText = data.subButtonLinkText || '';
-  const subButtonTitle = data.subButtonLinkTitle || '';
-  const subButtonType = (data.subButtonLinkType === 'primary') ? 'primary' : 'secondary';
 
   // Clear and rebuild
   block.innerHTML = '';
@@ -92,49 +64,23 @@ export default function decorate(block) {
     content.appendChild(subtitleEl);
   }
 
-  // Buttons based on buttonCount
-  if (buttonCount !== 'none') {
-    const buttonContainer = document.createElement('div');
-    buttonContainer.className = 'banner-buttons';
+  // Create button container
+  const buttonContainer = document.createElement('div');
+  buttonContainer.className = 'banner-buttons';
 
-    // Helper function to create buttons
-    const createButton = (text, link, buttonTitle, type) => {
-      if (!text) return null;
+  // Add buttons
+  const primaryBtn = document.createElement('button');
+  primaryBtn.className = 'button primary';
+  primaryBtn.textContent = '重要公告';
+  buttonContainer.appendChild(primaryBtn);
 
-      const wrapper = document.createElement('div');
-      wrapper.className = 'button-container';
+  const secondaryBtn = document.createElement('button');
+  secondaryBtn.className = 'button secondary';
+  secondaryBtn.textContent = '新聞直播';
+  buttonContainer.appendChild(secondaryBtn);
 
-      const button = document.createElement('a');
-      button.className = `button ${type}`;
-      button.href = link || '#';
-      button.textContent = text;
-      if (buttonTitle) button.title = buttonTitle;
-
-      wrapper.appendChild(button);
-      return wrapper;
-    };
-
-    // Main button
-    if (buttonCount === 'main-only' || buttonCount === 'main-and-sub') {
-      const mainBtn = createButton(mainButtonText, mainButtonLink, mainButtonTitle, mainButtonType);
-      if (mainBtn) {
-        buttonContainer.appendChild(mainBtn);
-      }
-    }
-
-    // Sub button
-    if (buttonCount === 'main-and-sub') {
-      const subBtn = createButton(subButtonText, subButtonLink, subButtonTitle, subButtonType);
-      if (subBtn) {
-        buttonContainer.appendChild(subBtn);
-      }
-    }
-
-    // Only add button container if it has buttons
-    if (buttonContainer.children.length > 0) {
-      content.appendChild(buttonContainer);
-    }
-  }
+  // Add button container to content
+  content.appendChild(buttonContainer);
 
   // Add container to block
   container.appendChild(content);
