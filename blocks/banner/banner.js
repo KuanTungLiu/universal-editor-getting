@@ -9,20 +9,20 @@ function createButton(text, link, title, isPrimary = true) {
 
   const button = document.createElement('a');
   button.className = `btn ${isPrimary ? 'btn-primary' : 'btn-secondary'}`;
-  
+
   // 如果有連結就加入，沒有就使用 # 作為預設
   button.href = link || '#';
   button.textContent = text;
-  
+
   if (title) {
     button.title = title;
   }
-  
+
   // 如果沒有真實連結，防止點擊行為
   if (!link) {
     button.addEventListener('click', (e) => e.preventDefault());
   }
-  
+
   return button;
 }
 
@@ -40,8 +40,6 @@ export default function decorate(block) {
     const cells = [...row.children];
     if (cells.length >= 2) {
       const key = cells[0].textContent.trim();
-      // 檢查是否包含連結
-      const links = cells[1].querySelectorAll('a');
       if (key.includes('ButtonText')) {
         data[key] = cells[1].textContent.trim();
       } else if (key.includes('ButtonLink')) {
@@ -137,7 +135,7 @@ export default function decorate(block) {
       content.appendChild(buttonWrapper);
     }
   }
-  
+
   // 加入container
   container.appendChild(content);
   block.appendChild(container);
