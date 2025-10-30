@@ -3,32 +3,7 @@
  * Supports dynamic button rendering based on buttonCount selection
  */
 
-function createButton(text, link, title, isPrimary = true) {
-  if (!text) return null;
-
-  // Create button container
-  const buttonContainer = document.createElement('div');
-  buttonContainer.className = 'button-container';
-
-  // Create link
-  const buttonLink = document.createElement('a');
-  buttonLink.className = 'button';
-  if (isPrimary) {
-    buttonLink.classList.add('primary');
-  } else {
-    buttonLink.classList.add('secondary');
-  }
-
-  buttonLink.href = link || '#';
-  buttonLink.textContent = text;
-
-  if (title) {
-    buttonLink.title = title;
-  }
-
-  buttonContainer.appendChild(buttonLink);
-  return buttonContainer;
-} export default function decorate(block) {
+export default function decorate(block) {
   // If in editor mode, don't modify structure
   if (block.hasAttribute('data-aue-resource')) {
     return;
@@ -69,14 +44,16 @@ function createButton(text, link, title, isPrimary = true) {
   const buttonCount = data.buttonCount || 'none';
 
   // Main button
-  const mainButtonText = data.mainButtonText || '';
   const mainButtonLink = data.mainButtonLink || '';
-  const mainButtonLinkTitle = data.mainButtonLinkTitle || '';
+  const mainButtonText = data.mainButtonLinkText || '';
+  const mainButtonTitle = data.mainButtonLinkTitle || '';
+  const mainButtonType = data.mainButtonLinkType || 'primary';
 
   // Sub button
-  const subButtonText = data.subButtonText || '';
   const subButtonLink = data.subButtonLink || '';
-  const subButtonLinkTitle = data.subButtonLinkTitle || '';
+  const subButtonText = data.subButtonLinkText || '';
+  const subButtonTitle = data.subButtonLinkTitle || '';
+  const subButtonType = data.subButtonLinkType || 'secondary';
 
   // Clear and rebuild
   block.innerHTML = '';
@@ -116,38 +93,49 @@ function createButton(text, link, title, isPrimary = true) {
 
   // Buttons based on buttonCount
   if (buttonCount !== 'none') {
-    const buttonWrapper = document.createElement('div');
-    buttonWrapper.className = 'banner-buttons';
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'banner-buttons';
+
+    // Helper function to create buttons
+    const createButton = (text, link, title, type) => {
+      if (!text) return null;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'button-container';
+
+      const button = document.createElement('a');
+      button.className = `button ${type}`;
+      button.href = link || '#';
+      button.textContent = text;
+      if (title) button.title = title;
+
+      wrapper.appendChild(button);
+      return wrapper;
+    };
 
     // Main button
     if (buttonCount === 'main-only' || buttonCount === 'main-and-sub') {
-      // 只要有按鈕文字就建立按鈕
-      if (mainButtonText) {
-        const mainBtn = createButton(mainButtonText, mainButtonLink, mainButtonLinkTitle, true);
-        if (mainBtn) {
-          buttonWrapper.appendChild(mainBtn);
-        }
+      const mainBtn = createButton(mainButtonText, mainButtonLink, mainButtonTitle, mainButtonType);
+      if (mainBtn) {
+        buttonContainer.appendChild(mainBtn);
       }
     }
 
     // Sub button
     if (buttonCount === 'main-and-sub') {
-      // 只要有按鈕文字就建立按鈕
-      if (subButtonText) {
-        const subBtn = createButton(subButtonText, subButtonLink, subButtonLinkTitle, false);
-        if (subBtn) {
-          buttonWrapper.appendChild(subBtn);
-        }
+      const subBtn = createButton(subButtonText, subButtonLink, subButtonTitle, subButtonType);
+      if (subBtn) {
+        buttonContainer.appendChild(subBtn);
       }
     }
 
-    // Only add button wrapper if it has buttons
-    if (buttonWrapper.children.length > 0) {
-      content.appendChild(buttonWrapper);
+    // Only add button container if it has buttons
+    if (buttonContainer.children.length > 0) {
+      content.appendChild(buttonContainer);
     }
   }
 
-  // 加入container
+  // Add container to block
   container.appendChild(content);
   block.appendChild(container);
 

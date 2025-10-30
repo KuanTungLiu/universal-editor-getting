@@ -198,12 +198,6 @@
         "showIf": "buttonCount != 'none'",
         "fields": [
           {
-            "component": "text",
-            "name": "mainButtonText",
-            "label": "Main Button Text / 主要按鈕文字",
-            "required": true
-          },
-          {
             "component": "aem-content",
             "name": "mainButtonLink",
             "label": "Main Button Link / 主要按鈕連結",
@@ -211,8 +205,30 @@
           },
           {
             "component": "text",
+            "name": "mainButtonLinkText",
+            "label": "Main Button Text / 主要按鈕文字",
+            "required": true
+          },
+          {
+            "component": "text",
             "name": "mainButtonLinkTitle",
             "label": "Main Button Link Title / 主要按鈕連結標題",
+            "required": false
+          },
+          {
+            "component": "select",
+            "name": "mainButtonLinkType",
+            "label": "Button Type / 按鈕類型",
+            "options": [
+              {
+                "name": "主要按鈕",
+                "value": "primary"
+              },
+              {
+                "name": "次要按鈕",
+                "value": "secondary"
+              }
+            ],
             "required": false
           }
         ]
@@ -224,12 +240,6 @@
         "showIf": "buttonCount == 'main-and-sub'",
         "fields": [
           {
-            "component": "text",
-            "name": "subButtonText",
-            "label": "Sub Button Text / 次要按鈕文字",
-            "required": false
-          },
-          {
             "component": "aem-content",
             "name": "subButtonLink",
             "label": "Sub Button Link / 次要按鈕連結",
@@ -237,8 +247,31 @@
           },
           {
             "component": "text",
+            "name": "subButtonLinkText",
+            "label": "Sub Button Text / 次要按鈕文字",
+            "required": false
+          },
+          {
+            "component": "text",
             "name": "subButtonLinkTitle",
             "label": "Sub Button Link Title / 次要按鈕連結標題",
+            "required": false
+          },
+          {
+            "component": "select",
+            "name": "subButtonLinkType",
+            "label": "Button Type / 按鈕類型",
+            "value": "secondary",
+            "options": [
+              {
+                "name": "主要按鈕",
+                "value": "primary"
+              },
+              {
+                "name": "次要按鈕",
+                "value": "secondary"
+              }
+            ],
             "required": false
           }
         ]

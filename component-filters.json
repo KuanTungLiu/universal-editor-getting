@@ -17,8 +17,7 @@
       "columns",
       "fragment",
       "teaser",
-      "quote",
-      "banner"
+      "quote"
     ]
   },
   {
@@ -39,8 +38,7 @@
       "text",
       "image",
       "button",
-      "title",
-      "datetime"
+      "title"
     ]
   }
 ]
