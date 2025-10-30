@@ -173,41 +173,62 @@
       },
       {
         "component": "select",
-        "name": "bannerType",
-        "label": "Banner Type / Banner類型",
-        "required": true,
-        "options": [
-          {
-            "name": "重要公告",
-            "value": "announcement"
-          },
-          {
-            "name": "新聞直播",
-            "value": "news"
-          }
-        ]
-      },
-      {
-        "component": "select",
-        "name": "Button",
-        "label": "Button / 按鈕選項",
+        "name": "buttonCount",
+        "label": "Button Number / 按鈕個數",
         "value": "none",
+        "required": true,
         "options": [
           {
             "name": "無按鈕",
             "value": ""
           },
           {
-            "name": "主要按鈕",
-            "value": "重要公告",
-            "component": "aem-content",
-            "label": "link"
+            "name": "只有主按鈕",
+            "value": "main-only"
           },
           {
             "name": "主按鈕及次按鈕",
-            "value": "新聞直播",
+            "value": "main-and-sub"
+          }
+        ]
+      },
+      {
+        "component": "fieldset",
+        "name": "mainButtonSettings",
+        "label": "Main Button Settings / 主要按鈕設定",
+        "showIf": "buttonCount == 'main-only' || buttonCount == 'main-and-sub'",
+        "fields": [
+          {
             "component": "aem-content",
-            "label": "link"
+            "name": "mainButtonLink",
+            "label": "Main Button Link / 主要按鈕連結",
+            "required": true
+          },
+          {
+            "component": "text",
+            "name": "mainButtonText",
+            "label": "重要公告",
+            "required": true
+          }
+        ]
+      },
+      {
+        "component": "fieldset",
+        "name": "subButtonSettings",
+        "label": "Sub Button Settings / 次要按鈕設定",
+        "showIf": "buttonCount == 'main-and-sub'",
+        "fields": [
+          {
+            "component": "aem-content",
+            "name": "subButtonLink",
+            "label": "Sub Button Link / 次要按鈕連結",
+            "required": true
+          },
+          {
+            "component": "text",
+            "name": "subButtonText",
+            "label": "新聞直播",
+            "required": true
           }
         ]
       }

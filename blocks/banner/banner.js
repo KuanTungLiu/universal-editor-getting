@@ -1,6 +1,6 @@
 /**
  * Banner Block for AEM Edge Delivery Services
- * Supports banner type selection with announcement and news buttons
+ * Supports dynamic button rendering based on buttonCount selection
  */
 
 export default function decorate(block) {
@@ -18,7 +18,16 @@ export default function decorate(block) {
     if (cells.length >= 2) {
       const key = cells[0].textContent.trim();
       const cell = cells[1];
-      data[key] = cell.textContent.trim();
+
+      // Handle button links
+      if (key.endsWith('ButtonLink')) {
+        const link = cell.querySelector('a');
+        if (link) {
+          data[key] = link.getAttribute('href');
+        }
+      } else {
+        data[key] = cell.textContent.trim();
+      }
     }
   });
 
@@ -27,6 +36,17 @@ export default function decorate(block) {
   const subtitle = data.subtitle || '';
   const image = data.image || '';
   const imageAlt = data.imageAlt || '';
+  const buttonCount = data.buttonCount || 'none';
+
+  // Main button
+  const mainButtonLink = data.mainButtonLink || '#';
+  const mainButtonText = data.mainButtonText || '';
+  const mainButtonType = data.mainButtonType || 'primary';
+
+  // Sub button
+  const subButtonLink = data.subButtonLink || '#';
+  const subButtonText = data.subButtonText || '';
+  const subButtonType = data.subButtonType || 'secondary';
 
   // Clear and rebuild
   block.innerHTML = '';
@@ -39,7 +59,7 @@ export default function decorate(block) {
   const content = document.createElement('div');
   content.className = 'banner-content';
 
-  // Image (background or foreground)
+  // Image
   if (image) {
     const imgEl = document.createElement('img');
     imgEl.src = image;
@@ -64,23 +84,48 @@ export default function decorate(block) {
     content.appendChild(subtitleEl);
   }
 
-  // Create button container
-  const buttonContainer = document.createElement('div');
-  buttonContainer.className = 'banner-buttons';
+  // Create buttons based on buttonCount
+  if (buttonCount !== 'none') {
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'banner-buttons';
 
-  // Add buttons
-  const primaryBtn = document.createElement('button');
-  primaryBtn.className = 'button primary';
-  primaryBtn.textContent = '重要公告';
-  buttonContainer.appendChild(primaryBtn);
+    // Helper function to create button
+    const createButton = (text, link, type) => {
+      if (!text || !link) return null;
 
-  const secondaryBtn = document.createElement('button');
-  secondaryBtn.className = 'button secondary';
-  secondaryBtn.textContent = '新聞直播';
-  buttonContainer.appendChild(secondaryBtn);
+      const wrapper = document.createElement('div');
+      wrapper.className = 'button-wrapper';
 
-  // Add button container to content
-  content.appendChild(buttonContainer);
+      const button = document.createElement('a');
+      button.className = `button ${type}`;
+      button.href = link;
+      button.textContent = text;
+
+      wrapper.appendChild(button);
+      return wrapper;
+    };
+
+    // Add main button
+    if (buttonCount === 'main-only' || buttonCount === 'main-and-sub') {
+      const mainBtn = createButton(mainButtonText, mainButtonLink, mainButtonType);
+      if (mainBtn) {
+        buttonContainer.appendChild(mainBtn);
+      }
+    }
+
+    // Add sub button
+    if (buttonCount === 'main-and-sub') {
+      const subBtn = createButton(subButtonText, subButtonLink, subButtonType);
+      if (subBtn) {
+        buttonContainer.appendChild(subBtn);
+      }
+    }
+
+    // Only add button container if it has buttons
+    if (buttonContainer.children.length > 0) {
+      content.appendChild(buttonContainer);
+    }
+  }
 
   // Add container to block
   container.appendChild(content);
