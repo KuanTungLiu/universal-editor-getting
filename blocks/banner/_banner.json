@@ -49,21 +49,23 @@
         },
            {
               "component": "select",
-              "name": "ButtonType",
-              "label": "按鈕選項",
+              "name": "Button",
+              "label": "Button / 按鈕選項",
               "value": "none",
               "options": [
                 {
                     "name": "無按鈕",
-                    "value": "none"
+                    "value": ""
                 },
                 {
-                  "name": "主要按鈕樣式",
-                  "value": "primary"
+                  "name": "主要按鈕",
+                  "value": "primary",
+                  "component":"button"
                 },
                 {
-                  "name": "次要按鈕樣式",
-                  "value": "secondary"
+                  "name": "主按鈕及次按鈕",
+                  "value": "secondary",
+                  "component":"button"
                 }
               ]
             },
