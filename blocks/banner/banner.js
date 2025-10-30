@@ -4,15 +4,25 @@
  */
 
 function createButton(text, link, title, isPrimary = true) {
-  if (!text || !link) return null;
+  // 確保至少有文字
+  if (!text) return null;
 
   const button = document.createElement('a');
   button.className = `btn ${isPrimary ? 'btn-primary' : 'btn-secondary'}`;
-  button.href = link;
+  
+  // 如果有連結就加入，沒有就使用 # 作為預設
+  button.href = link || '#';
   button.textContent = text;
+  
   if (title) {
     button.title = title;
   }
+  
+  // 如果沒有真實連結，防止點擊行為
+  if (!link) {
+    button.addEventListener('click', (e) => e.preventDefault());
+  }
+  
   return button;
 }
 
@@ -30,8 +40,15 @@ export default function decorate(block) {
     const cells = [...row.children];
     if (cells.length >= 2) {
       const key = cells[0].textContent.trim();
-      const value = cells[1].textContent.trim() || cells[1].innerHTML.trim();
-      data[key] = value;
+      // 檢查是否包含連結
+      const links = cells[1].querySelectorAll('a');
+      if (key.includes('ButtonText')) {
+        data[key] = cells[1].textContent.trim();
+      } else if (key.includes('ButtonLink')) {
+        data[key] = cells[1].querySelector('a')?.getAttribute('href') || '';
+      } else {
+        data[key] = cells[1].textContent.trim() || cells[1].innerHTML.trim();
+      }
     }
   });
 
@@ -95,17 +112,23 @@ export default function decorate(block) {
 
     // Main button
     if (buttonCount === 'main-only' || buttonCount === 'main-and-sub') {
-      const mainBtn = createButton(mainButtonText, mainButtonLink, mainButtonLinkTitle, true);
-      if (mainBtn) {
-        buttonWrapper.appendChild(mainBtn);
+      // 只要有按鈕文字就建立按鈕
+      if (mainButtonText) {
+        const mainBtn = createButton(mainButtonText, mainButtonLink, mainButtonLinkTitle, true);
+        if (mainBtn) {
+          buttonWrapper.appendChild(mainBtn);
+        }
       }
     }
 
     // Sub button
     if (buttonCount === 'main-and-sub') {
-      const subBtn = createButton(subButtonText, subButtonLink, subButtonLinkTitle, false);
-      if (subBtn) {
-        buttonWrapper.appendChild(subBtn);
+      // 只要有按鈕文字就建立按鈕
+      if (subButtonText) {
+        const subBtn = createButton(subButtonText, subButtonLink, subButtonLinkTitle, false);
+        if (subBtn) {
+          buttonWrapper.appendChild(subBtn);
+        }
       }
     }
 
@@ -114,6 +137,10 @@ export default function decorate(block) {
       content.appendChild(buttonWrapper);
     }
   }
+  
+  // 加入container
+  container.appendChild(content);
+  block.appendChild(container);
 
   container.appendChild(content);
   block.appendChild(container);
