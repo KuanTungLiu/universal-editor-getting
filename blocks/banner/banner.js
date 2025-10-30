@@ -97,7 +97,7 @@ export default function decorate(block) {
     buttonContainer.className = 'banner-buttons';
 
     // Helper function to create buttons
-    const createButton = (text, link, title, type) => {
+    const createButton = (text, link, buttonTitle, type) => {
       if (!text) return null;
 
       const wrapper = document.createElement('div');
@@ -107,7 +107,7 @@ export default function decorate(block) {
       button.className = `button ${type}`;
       button.href = link || '#';
       button.textContent = text;
-      if (title) button.title = title;
+      if (buttonTitle) button.title = buttonTitle;
 
       wrapper.appendChild(button);
       return wrapper;
