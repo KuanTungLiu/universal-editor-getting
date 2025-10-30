@@ -10,129 +10,128 @@ export default function decorate(block) {
   const rows = [...block.children];
   const data = {};
 
+  // Extract data from rows
   rows.forEach((row) => {
     const cells = [...row.children];
     if (cells.length >= 2) {
       const key = cells[0].textContent.trim();
       const cell = cells[1];
+      const value = cell.innerHTML.trim();
+      data[key] = value;
 
-      // Handle button links
+      // Special handling for button links
       if (key.endsWith('ButtonLink')) {
         const link = cell.querySelector('a');
         if (link) {
           data[key] = link.getAttribute('href');
         }
-      } else {
-        data[key] = cell.textContent.trim();
       }
     }
   });
 
-  // Extract values
-  const title = data.title || '';
-  const subtitle = data.subtitle || '';
-  const image = data.image || '';
-  const imageAlt = data.imageAlt || '';
-  const buttonCount = data.buttonCount || 'none';
+  // If in editor mode, only enhance buttons
+  if (isEditor) {
+    const buttonRows = rows.filter((row) => {
+      const key = row.children[0].textContent.trim();
+      return key.endsWith('ButtonText');
+    });
 
-  // Main button
-  const mainButtonLink = data.mainButtonLink || '#';
-  const mainButtonText = data.mainButtonText || '';
-  const mainButtonType = data.mainButtonType || 'primary';
+    buttonRows.forEach((row) => {
+      const btnCell = row.children[1];
+      if (btnCell.textContent.trim()) {
+        const btn = document.createElement('button');
+        btn.className = 'button primary';
+        btn.textContent = btnCell.textContent.trim();
+        btnCell.innerHTML = '';
+        btnCell.appendChild(btn);
+      }
+    });
+    return;
+  }
 
-  // Sub button
-  const subButtonLink = data.subButtonLink || '#';
-  const subButtonText = data.subButtonText || '';
-  const subButtonType = data.subButtonType || 'secondary';
-
-  // Clear and rebuild
+  // Clear for runtime mode
   block.innerHTML = '';
 
-  // Container
+  // Create container structure
   const container = document.createElement('div');
   container.className = 'banner-container';
 
-  // Content wrapper
   const content = document.createElement('div');
   content.className = 'banner-content';
 
-  // Image
-  if (image) {
+  // Add title
+  if (data.title) {
+    const titleEl = document.createElement('h1');
+    titleEl.className = 'banner-title';
+    titleEl.innerHTML = data.title;
+    content.appendChild(titleEl);
+  }
+
+  // Add subtitle
+  if (data.subtitle) {
+    const subtitleEl = document.createElement('div');
+    subtitleEl.className = 'banner-subtitle';
+    subtitleEl.innerHTML = data.subtitle;
+    content.appendChild(subtitleEl);
+  }
+
+  // Add image
+  if (data.image) {
     const imgEl = document.createElement('img');
-    imgEl.src = image;
-    imgEl.alt = imageAlt;
+    imgEl.src = data.image;
+    imgEl.alt = data.imageAlt || '';
     imgEl.className = 'banner-image';
     container.appendChild(imgEl);
   }
 
-  // Title
-  if (title) {
-    const titleEl = document.createElement('h1');
-    titleEl.className = 'banner-title';
-    titleEl.textContent = title;
-    content.appendChild(titleEl);
-  }
-
-  // Subtitle
-  if (subtitle) {
-    const subtitleEl = document.createElement('div');
-    subtitleEl.className = 'banner-subtitle';
-    subtitleEl.innerHTML = subtitle;
-    content.appendChild(subtitleEl);
-  }
-
-  // Create buttons based on buttonCount
+  // Handle buttons
+  const buttonCount = data.buttonCount || 'none';
   if (buttonCount !== 'none') {
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'banner-buttons';
 
     // Helper function to create button
-    const createButton = (text, link, type) => {
+    const createButton = (text, link, type = 'primary') => {
+      if (!text || !link) return null;
+
       const wrapper = document.createElement('div');
       wrapper.className = 'button-wrapper';
 
-      if (isEditor) {
-        // In editor mode, create a button element
-        const button = document.createElement('button');
-        button.className = `button ${type || 'primary'}`;
-        button.textContent = text || '按鈕';
-        wrapper.appendChild(button);
-      } else {
-        // In runtime mode, create an anchor element
-        if (!text || !link) return null;
-        const button = document.createElement('a');
-        button.className = `button ${type || 'primary'}`;
-        button.href = link;
-        button.textContent = text;
-        wrapper.appendChild(button);
-      }
+      const button = document.createElement('a');
+      button.className = `button ${type}`;
+      button.href = link;
+      button.textContent = text;
 
+      wrapper.appendChild(button);
       return wrapper;
     };
 
     // Add main button
     if (buttonCount === 'main-only' || buttonCount === 'main-and-sub') {
-      const mainBtn = createButton(mainButtonText, mainButtonLink, mainButtonType);
-      if (mainBtn) {
-        buttonContainer.appendChild(mainBtn);
-      }
+      const mainBtn = createButton(
+        data.mainButtonText,
+        data.mainButtonLink,
+        data.mainButtonType || 'primary',
+      );
+      if (mainBtn) buttonContainer.appendChild(mainBtn);
     }
 
     // Add sub button
     if (buttonCount === 'main-and-sub') {
-      const subBtn = createButton(subButtonText, subButtonLink, subButtonType);
-      if (subBtn) {
-        buttonContainer.appendChild(subBtn);
-      }
+      const subBtn = createButton(
+        data.subButtonText,
+        data.subButtonLink,
+        data.subButtonType || 'secondary',
+      );
+      if (subBtn) buttonContainer.appendChild(subBtn);
     }
 
-    // Add button container to content if we have buttons
     if (buttonContainer.children.length > 0) {
       content.appendChild(buttonContainer);
     }
   }
 
-  // Add container to block
+  // Finalize
   container.appendChild(content);
   block.appendChild(container);
 }
