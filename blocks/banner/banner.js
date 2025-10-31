@@ -2,11 +2,22 @@ export default function decorate(block) {
   const data = {};
   const props = block.querySelectorAll('[data-aue-prop]');
 
+  // read properties robustly: prefer link href, then img src, then textContent, then innerHTML
   props.forEach((el) => {
     const key = el.getAttribute('data-aue-prop');
-    // 如果有 <a>，抓 href；沒則抓文字
     const anchor = el.querySelector('a');
-    data[key] = anchor && anchor.getAttribute('href') ? anchor.getAttribute('href') : el.textContent.trim();
+    const img = el.querySelector('img');
+    const text = el.textContent.trim();
+    const html = el.innerHTML.trim();
+    if (anchor && anchor.getAttribute('href')) {
+      data[key] = anchor.getAttribute('href');
+    } else if (img && img.getAttribute('src')) {
+      data[key] = img.getAttribute('src');
+    } else if (text) {
+      data[key] = text;
+    } else {
+      data[key] = html;
+    }
   });
 
   block.innerHTML = '';
