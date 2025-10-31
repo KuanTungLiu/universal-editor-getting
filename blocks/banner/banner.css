@@ -17,15 +17,24 @@
   gap: 20px;
 }
 
-.banner-title {
+/* 強化顏色優先度，避免被其他容器或元素選擇器覆蓋 */
+.banner-title,
+.banner-title * {
   color: #2db88d;
+}
+
+.banner-title {
   font-size: 48px;
   font-weight: bold;
   margin: 0 0 20px;
 }
 
-.banner-subtitle {
+.banner-subtitle,
+.banner-subtitle * {
   color: #666;
+}
+
+.banner-subtitle {
   font-size: 16px;
   line-height: 1.6;
   margin: 0 0 20px;
@@ -89,7 +98,7 @@
   .banner-content {
     flex-direction: column;
     text-align: center;
-    align-items: center; 
+    align-items: center;
   }
 
   .banner-title {
@@ -97,8 +106,8 @@
   }
 
   .banner-buttons {
-    justify-content: center; 
-    flex-wrap: wrap; 
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
   .banner-buttons .btn {

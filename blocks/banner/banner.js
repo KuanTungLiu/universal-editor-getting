@@ -1,14 +1,23 @@
 /**
  * Banner Block for AEM Edge Delivery Services
- * Supports dynamic button rendering based on buttonCount selection
  * Robust parsing for both table-based blocks and data-aue-prop authored content
+ * - title uses textContent to avoid invalid HTML in <h1>
+ * - subtitle keeps rich text via innerHTML
+ * - supports nested data-aue-prop keys like "mainButtonSettings.mainButtonText"
+ * - buttons render if text exists (buttonCount just overrides)
  */
 
 export default function decorate(block) {
   const isEditor = block.hasAttribute('data-aue-resource');
 
-  // Helpers
   const norm = (v) => (typeof v === 'string' ? v.trim() : v);
+  const lastKey = (k) => (k || '').split('.').pop();
+
+  const firstUrlFromSrcset = (srcset) => {
+    if (!srcset) return '';
+    const first = srcset.split(',')[0]?.trim();
+    return first ? first.split(' ')[0] : '';
+  };
 
   const normalizeButtonCount = (raw) => {
     const v = String(raw || '').toLowerCase().trim();
@@ -18,39 +27,22 @@ export default function decorate(block) {
     return 'none';
   };
 
-  const inferButtonCountFromData = (data) => {
-    const hasMain = !!(data.mainButtonText || data.mainButtonLink);
-    const hasSub = !!(data.subButtonText || data.subButtonLink);
-    if (hasMain && hasSub) return 'main-and-sub';
-    if (hasMain) return 'main-only';
-    return 'none';
-  };
-
-  const firstUrlFromSrcset = (srcset) => {
-    if (!srcset) return '';
-    const first = srcset.split(',')[0]?.trim();
-    return first ? first.split(' ')[0] : '';
-  };
-
-  // Data object to collect authored values
   const data = {};
 
-  // Strategy A: parse data-aue-prop authored content
+  // A) data-aue-prop authored
   const props = block.querySelectorAll('[data-aue-prop]');
   if (props.length > 0) {
     props.forEach((el) => {
-      const key = el.getAttribute('data-aue-prop');
+      const rawKey = el.getAttribute('data-aue-prop');
+      const key = lastKey(rawKey);
       if (!key) return;
 
-      // Prefer picture if present
+      // Prefer picture
       const picture = el.querySelector('picture');
       if (picture) {
         data[key] = picture.cloneNode(true);
-        // take alt if possible
         const picImg = picture.querySelector('img');
-        if (picImg?.getAttribute('alt')) {
-          data[`${key}Alt`] = picImg.getAttribute('alt');
-        }
+        if (picImg?.getAttribute('alt')) data[`${key}Alt`] = picImg.getAttribute('alt');
         return;
       }
 
@@ -74,35 +66,60 @@ export default function decorate(block) {
         }
       }
 
-      // Then anchor href (for *Link fields)
+      // Link
       const a = el.querySelector('a[href]');
       if (a && (key.toLowerCase().endsWith('link') || a.textContent.trim().length === 0)) {
         data[key] = a.getAttribute('href');
         return;
       }
 
-      // Prefer innerHTML for rich fields, text for plain
+      // Text/HTML
       const html = el.innerHTML.trim();
       const text = el.textContent.trim();
-      // For title/subtitle prefer HTML to keep formatting
-      if (['title', 'subtitle'].includes(key)) {
-        data[key] = html || text || '';
-      } else {
+
+      // title: use plain text to avoid invalid markup inside <h1>
+      if (key === 'title') {
         data[key] = text || html || '';
+        return;
       }
+
+      // subtitle is richtext
+      if (key === 'subtitle') {
+        data[key] = html || text || '';
+        return;
+      }
+
+      data[key] = text || html || '';
     });
+
+    // Editor: only enhance button visuals; don't wipe authored DOM
+    if (isEditor) {
+      const btnTextNodes = block.querySelectorAll('[data-aue-prop$="ButtonText"]');
+      btnTextNodes.forEach((el) => {
+        const text = el.textContent.trim();
+        if (!text) return;
+        let clickable = el.querySelector('a,button');
+        if (!clickable) {
+          clickable = document.createElement('button');
+          clickable.type = 'button';
+          el.innerHTML = '';
+          el.appendChild(clickable);
+        }
+        clickable.classList.add('button', 'primary');
+        clickable.textContent = text;
+      });
+      return;
+    }
   } else {
-    // Strategy B: parse table rows (two-column)
+    // B) table-authored fallback
     const rows = [...block.children];
     rows.forEach((row) => {
       const cells = [...row.children];
       if (cells.length >= 2) {
         const key = cells[0].textContent.trim();
         const cell = cells[1];
-        const value = cell.innerHTML.trim();
-        data[key] = value;
+        data[key] = cell.innerHTML.trim();
 
-        // Special handling for links
         if (key.toLowerCase().endsWith('buttonlink') || key.toLowerCase().endsWith('link')) {
           const link = cell.querySelector('a[href]');
           if (link) data[key] = link.getAttribute('href');
@@ -110,12 +127,9 @@ export default function decorate(block) {
       }
     });
 
-    // Editor enhancement for table mode: render buttons visually without clearing DOM
+    // Editor enhancement for table mode
     if (isEditor) {
-      const buttonRows = rows.filter((row) => {
-        const key = row.children?.[0]?.textContent?.trim() || '';
-        return key.toLowerCase().endsWith('buttontext');
-      });
+      const buttonRows = rows.filter((row) => row.children?.[0]?.textContent?.trim().toLowerCase().endsWith('buttontext'));
       buttonRows.forEach((row) => {
         const btnCell = row.children?.[1];
         if (!btnCell) return;
@@ -133,29 +147,7 @@ export default function decorate(block) {
     }
   }
 
-  // Editor enhancement for data-aue-prop mode: do not rebuild, just enhance button visuals
-  if (isEditor && props.length > 0) {
-    const buttonTextEls = block.querySelectorAll('[data-aue-prop$="ButtonText"]');
-    buttonTextEls.forEach((el) => {
-      const text = el.textContent.trim();
-      if (!text) return;
-      // If an anchor exists, style it. Else create a button element so it's visible.
-      let clickable = el.querySelector('a');
-      if (!clickable) {
-        clickable = document.createElement('button');
-        clickable.type = 'button';
-        clickable.textContent = text;
-        el.innerHTML = '';
-        el.appendChild(clickable);
-      } else {
-        clickable.textContent = text;
-      }
-      clickable.classList.add('button', 'primary');
-    });
-    return;
-  }
-
-  // Runtime render: rebuild DOM
+  // Runtime render
   block.innerHTML = '';
 
   const container = document.createElement('div');
@@ -164,13 +156,13 @@ export default function decorate(block) {
   const content = document.createElement('div');
   content.className = 'banner-content';
 
-  // Image: keep same structure as working version -> child of container (sibling to content)
+  // Image as sibling of content (matches your CSS)
   if (data.image) {
     if (data.image instanceof Node) {
       const node = data.image.cloneNode(true);
       node.classList?.add?.('banner-image');
-      const imgInPic = node.querySelector?.('img');
-      if (imgInPic) imgInPic.classList.add('banner-image');
+      const innerImg = node.querySelector?.('img');
+      if (innerImg) innerImg.classList.add('banner-image');
       container.appendChild(node);
     } else if (typeof data.image === 'object' && data.image.src) {
       const imgEl = document.createElement('img');
@@ -187,16 +179,15 @@ export default function decorate(block) {
     }
   }
 
-  // Title
+  // Title: text only into <h1> to avoid invalid nested markup
   if (data.title) {
     const titleEl = document.createElement('h1');
     titleEl.className = 'banner-title';
-    // data.title may be HTML (from props) or plain text (from table)
-    titleEl.innerHTML = data.title;
+    titleEl.textContent = norm(data.title);
     content.appendChild(titleEl);
   }
 
-  // Subtitle
+  // Subtitle: rich text allowed
   if (data.subtitle) {
     const subtitleEl = document.createElement('div');
     subtitleEl.className = 'banner-subtitle';
@@ -204,11 +195,14 @@ export default function decorate(block) {
     content.appendChild(subtitleEl);
   }
 
-  // Buttons
-  let buttonCount = normalizeButtonCount(data.buttonCount);
-  if (buttonCount === 'none') {
-    // Infer if not set
-    buttonCount = inferButtonCountFromData(data);
+  // Buttons (render if text exists; buttonCount only overrides)
+  const hasMainText = !!norm(data.mainButtonText);
+  const hasSubText = !!norm(data.subButtonText);
+
+  let mode = normalizeButtonCount(data.buttonCount);
+  if (mode === 'none') {
+    if (hasMainText && hasSubText) mode = 'main-and-sub';
+    else if (hasMainText) mode = 'main-only';
   }
 
   const createButton = (text, link, type = 'primary') => {
@@ -222,46 +216,41 @@ export default function decorate(block) {
     a.className = `button ${type}`;
     a.href = norm(link) || '#';
     a.textContent = t;
-
-    // Optional: open external links safely
     try {
       const url = new URL(a.href, window.location.href);
-      const isExternal = url.origin !== window.location.origin;
-      if (isExternal) {
+      if (url.origin !== window.location.origin) {
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
       }
-    } catch {
-      // ignore URL parsing errors (e.g., just "#")
-    }
+    } catch { /* ignore */ }
 
     wrapper.appendChild(a);
     return wrapper;
   };
 
-  if (buttonCount !== 'none') {
-    const buttonContainer = document.createElement('div');
-    buttonContainer.className = 'banner-buttons';
+  if (mode !== 'none') {
+    const btnBox = document.createElement('div');
+    btnBox.className = 'banner-buttons';
 
-    if (buttonCount === 'main-only' || buttonCount === 'main-and-sub') {
-      const mainType = (data.mainButtonType || 'primary').toLowerCase().includes('secondary')
-        ? 'secondary'
-        : 'primary';
-      const mainBtn = createButton(data.mainButtonText, data.mainButtonLink, mainType);
-      if (mainBtn) buttonContainer.appendChild(mainBtn);
+    if (mode === 'main-only' || mode === 'main-and-sub') {
+      const mainBtn = createButton(
+        data.mainButtonText,
+        data.mainButtonLink,
+        (String(data.mainButtonType || 'primary').toLowerCase().includes('secondary') ? 'secondary' : 'primary'),
+      );
+      if (mainBtn) btnBox.appendChild(mainBtn);
     }
 
-    if (buttonCount === 'main-and-sub') {
-      const subType = (data.subButtonType || 'secondary').toLowerCase().includes('primary')
-        ? 'primary'
-        : 'secondary';
-      const subBtn = createButton(data.subButtonText, data.subButtonLink, subType);
-      if (subBtn) buttonContainer.appendChild(subBtn);
+    if (mode === 'main-and-sub') {
+      const subBtn = createButton(
+        data.subButtonText,
+        data.subButtonLink,
+        (String(data.subButtonType || 'secondary').toLowerCase().includes('primary') ? 'primary' : 'secondary'),
+      );
+      if (subBtn) btnBox.appendChild(subBtn);
     }
 
-    if (buttonContainer.children.length > 0) {
-      content.appendChild(buttonContainer);
-    }
+    if (btnBox.children.length > 0) content.appendChild(btnBox);
   }
 
   container.appendChild(content);
