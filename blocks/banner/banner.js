@@ -20,6 +20,62 @@ export default function decorate(block) {
     }
   });
 
+  // If no data-aue-prop nodes were found, assume server-rendered HTML is present
+  // and avoid wiping it. Instead, log info to help debugging and try to append
+  // buttons/images only if explicit properties exist.
+  if (!props || props.length === 0) {
+    // No editable props present — don't clear server-rendered markup.
+    // Debug info removed to satisfy lint/no-console in CI; if you need
+    // runtime debugging, temporarily add a console statement locally.
+
+    // Try to find existing content area
+    const existingContent = block.querySelector('.banner-content');
+    if (!existingContent) {
+      // Nothing we can do — bail out
+      return;
+    }
+
+    // If properties were provided through some other mechanism (data attributes), prefer them
+    const buttonCount = data.buttonCount || block.getAttribute('data-button-count') || block.dataset.buttonCount || 'none';
+    const mainText = data.mainButtonText || block.getAttribute('data-main-button-text') || block.dataset.mainButtonText;
+    const mainLink = data.mainButtonLink || block.getAttribute('data-main-button-link') || block.dataset.mainButtonLink;
+    const subText = data.subButtonText || block.getAttribute('data-sub-button-text') || block.dataset.subButtonText;
+    const subLink = data.subButtonLink || block.getAttribute('data-sub-button-link') || block.dataset.subButtonLink;
+
+    if (buttonCount === 'none') {
+      // nothing to append
+      return;
+    }
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'banner-buttons';
+
+    const createAnchor = (text, link, type = 'primary') => {
+      if (!text) return null;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'button-wrapper';
+      const a = document.createElement('a');
+      a.className = `button ${type}`;
+      a.href = link || '#';
+      a.textContent = text;
+      wrapper.appendChild(a);
+      return wrapper;
+    };
+
+    if ((buttonCount === 'main-only' || buttonCount === 'main-and-sub') && mainText) {
+      const m = createAnchor(mainText, mainLink, 'primary');
+      if (m) buttonContainer.appendChild(m);
+    }
+    if (buttonCount === 'main-and-sub' && subText) {
+      const s = createAnchor(subText, subLink, 'secondary');
+      if (s) buttonContainer.appendChild(s);
+    }
+
+    if (buttonContainer.children.length > 0) existingContent.appendChild(buttonContainer);
+    return;
+  }
+
+  // Props exist: rebuild from parsed data
   block.innerHTML = '';
 
   const container = document.createElement('div');
