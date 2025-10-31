@@ -4,134 +4,96 @@
  */
 
 export default function decorate(block) {
-  const isEditor = block.hasAttribute('data-aue-resource');
-
-  // Parse block content
-  const rows = [...block.children];
+  // 1. 解析 block 裡的 data-aue-prop
   const data = {};
+  const props = block.querySelectorAll('[data-aue-prop]');
 
-  // Extract data from rows
-  rows.forEach((row) => {
-    const cells = [...row.children];
-    if (cells.length >= 2) {
-      const key = cells[0].textContent.trim();
-      const cell = cells[1];
-      const value = cell.innerHTML.trim();
-      data[key] = value;
+  props.forEach((el) => {
+    const key = el.getAttribute('data-aue-prop');
+    const anchor = el.querySelector('a'); // 優先抓 <a> href
+    const img = el.querySelector('img'); // 再抓 <img> src
+    const text = el.textContent.trim(); // 再抓文字
+    const html = el.innerHTML.trim(); // 最後抓 innerHTML
 
-      // Special handling for button links
-      if (key.endsWith('ButtonLink')) {
-        const link = cell.querySelector('a');
-        if (link) {
-          data[key] = link.getAttribute('href');
-        }
-      }
+    if (anchor && anchor.getAttribute('href')) {
+      data[key] = anchor.getAttribute('href');
+    } else if (img && img.getAttribute('src')) {
+      data[key] = img.getAttribute('src');
+    } else if (text) {
+      data[key] = text;
+    } else {
+      data[key] = html;
     }
   });
 
-  // If in editor mode, only enhance buttons
-  if (isEditor) {
-    const buttonRows = rows.filter((row) => {
-      const key = row.children[0].textContent.trim();
-      return key.endsWith('ButtonText');
-    });
-
-    buttonRows.forEach((row) => {
-      const btnCell = row.children[1];
-      if (btnCell.textContent.trim()) {
-        const btn = document.createElement('button');
-        btn.className = 'button primary';
-        btn.textContent = btnCell.textContent.trim();
-        btnCell.innerHTML = '';
-        btnCell.appendChild(btn);
-      }
-    });
-    return;
-  }
-
-  // Clear for runtime mode
+  // 2. 清空 block
   block.innerHTML = '';
 
-  // Create container structure
+  // 3. 建立 container
   const container = document.createElement('div');
   container.className = 'banner-container';
 
   const content = document.createElement('div');
   content.className = 'banner-content';
 
-  // Add title
-  if (data.title) {
-    const titleEl = document.createElement('h1');
-    titleEl.className = 'banner-title';
-    titleEl.innerHTML = data.title;
-    content.appendChild(titleEl);
-  }
-
-  // Add subtitle
-  if (data.subtitle) {
-    const subtitleEl = document.createElement('div');
-    subtitleEl.className = 'banner-subtitle';
-    subtitleEl.innerHTML = data.subtitle;
-    content.appendChild(subtitleEl);
-  }
-
-  // Add image
+  // 4. 加入圖片
   if (data.image) {
     const imgEl = document.createElement('img');
     imgEl.src = data.image;
     imgEl.alt = data.imageAlt || '';
     imgEl.className = 'banner-image';
-    container.appendChild(imgEl);
+    content.appendChild(imgEl);
   }
 
-  // Handle buttons
+  // 5. 加入標題
+  if (data.title) {
+    const titleEl = document.createElement('h1');
+    titleEl.className = 'banner-title';
+    titleEl.textContent = data.title;
+    content.appendChild(titleEl);
+  }
+
+  // 6. 加入副標題
+  if (data.subtitle) {
+    const subtitleEl = document.createElement('div');
+    subtitleEl.className = 'banner-subtitle';
+    subtitleEl.textContent = data.subtitle;
+    content.appendChild(subtitleEl);
+  }
+
+  // 7. 處理按鈕
   const buttonCount = data.buttonCount || 'none';
   if (buttonCount !== 'none') {
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'banner-buttons';
 
-    // Helper function to create button
     const createButton = (text, link, type = 'primary') => {
-      if (!text || !link) return null;
-
+      if (!text) return null;
       const wrapper = document.createElement('div');
       wrapper.className = 'button-wrapper';
-
       const button = document.createElement('a');
       button.className = `button ${type}`;
-      button.href = link;
+      button.href = link || '#'; // link 沒抓到就用 #
       button.textContent = text;
-
       wrapper.appendChild(button);
       return wrapper;
     };
 
-    // Add main button
-    if (buttonCount === 'main-only' || buttonCount === 'main-and-sub') {
-      const mainBtn = createButton(
-        data.mainButtonText,
-        data.mainButtonLink,
-        data.mainButtonType || 'primary',
-      );
+    // 主按鈕
+    if ((buttonCount === 'main-only' || buttonCount === 'main-and-sub') && data.mainButtonText) {
+      const mainBtn = createButton(data.mainButtonText, data.mainButtonLink, 'primary');
       if (mainBtn) buttonContainer.appendChild(mainBtn);
     }
 
-    // Add sub button
-    if (buttonCount === 'main-and-sub') {
-      const subBtn = createButton(
-        data.subButtonText,
-        data.subButtonLink,
-        data.subButtonType || 'secondary',
-      );
+    // 次按鈕
+    if (buttonCount === 'main-and-sub' && data.subButtonText) {
+      const subBtn = createButton(data.subButtonText, data.subButtonLink, 'secondary');
       if (subBtn) buttonContainer.appendChild(subBtn);
     }
 
-    if (buttonContainer.children.length > 0) {
-      content.appendChild(buttonContainer);
-    }
+    if (buttonContainer.children.length > 0) content.appendChild(buttonContainer);
   }
 
-  // Finalize
   container.appendChild(content);
   block.appendChild(container);
 }
