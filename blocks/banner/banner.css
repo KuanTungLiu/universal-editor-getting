@@ -80,10 +80,10 @@
 
 /* 圖片樣式 */
 .banner-image {
-  flex: 0 0 40%;
-  max-width: 480px;
+  flex: 0 0 45%;
   width: 100%;
   height: auto;
+  max-width: none;
   display: block;
   object-fit: contain;
 }

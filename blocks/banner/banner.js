@@ -32,39 +32,94 @@ export default function decorate(block) {
       data[fullKey] = text;
     });
 
-    // Editor mode: enhance visuals without rebuilding DOM
+    // Editor mode: build a non-destructive preview with proper layout
     if (isEditor) {
-      // Apply classes so authored elements get block styles
       const titleEl = block.querySelector('[data-aue-prop="title"]');
-      if (titleEl) titleEl.classList.add('banner-title');
-
       const subtitleEl = block.querySelector('[data-aue-prop="subtitle"]');
-      if (subtitleEl) subtitleEl.classList.add('banner-subtitle');
-
-      const imageEl = block.querySelector('[data-aue-prop="image"]');
-      if (imageEl) imageEl.classList.add('banner-image');
-
-      // Hide raw buttonCount text in editor view
+      const imageWrapper = block.querySelector('[data-aue-prop="image"]');
+      const imageInWrapper = imageWrapper && imageWrapper.querySelector('img');
       const buttonCountEl = block.querySelector('[data-aue-prop="buttonCount"]');
-      if (buttonCountEl) buttonCountEl.style.display = 'none';
 
-      // Render buttons preview when authoring
-      block.querySelectorAll('[data-aue-prop]').forEach((el) => {
-        const key = el.getAttribute('data-aue-prop');
-        if (key.includes('ButtonText')) {
-          const text = el.textContent.trim();
-          if (text) {
-            let btn = el.querySelector('a,button');
-            if (!btn) {
-              btn = document.createElement('button');
-              el.innerHTML = '';
-              el.appendChild(btn);
-            }
-            btn.classList.add('button', 'primary');
-            btn.textContent = text;
-          }
-        }
+      // Values from DOM when available for fidelity
+      const titleText = titleEl ? titleEl.textContent.trim() : data.title || '';
+      const subtitleHtml = subtitleEl ? subtitleEl.innerHTML : '';
+      const imgSrc = imageInWrapper ? imageInWrapper.getAttribute('src') : (data.image || '');
+      const buttonCountVal = buttonCountEl ? buttonCountEl.textContent.trim().toLowerCase() : (data.buttonCount || '').toLowerCase();
+
+      // Hide raw authored fields so preview doesn't duplicate
+      [titleEl, subtitleEl, imageWrapper, buttonCountEl].forEach((el) => {
+        if (el) el.style.display = 'none';
       });
+
+      // Build preview container similar to runtime
+      const container = document.createElement('div');
+      container.className = 'banner-container';
+
+      const content = document.createElement('div');
+      content.className = 'banner-content';
+
+      if (titleText) {
+        const t = document.createElement('h1');
+        t.className = 'banner-title';
+        t.textContent = titleText;
+        content.appendChild(t);
+      }
+
+      if (subtitleHtml) {
+        const s = document.createElement('div');
+        s.className = 'banner-subtitle';
+        s.innerHTML = subtitleHtml;
+        content.appendChild(s);
+      }
+
+      // Buttons preview
+      const mainTextEl = block.querySelector('[data-aue-prop="mainButtonText"]');
+      const subTextEl = block.querySelector('[data-aue-prop="subButtonText"]');
+      const mainLinkEl = block.querySelector('[data-aue-prop="mainButtonLink"] a');
+      const subLinkEl = block.querySelector('[data-aue-prop="subButtonLink"] a');
+
+      const mainText = mainTextEl ? mainTextEl.textContent.trim() : '';
+      const subText = subTextEl ? subTextEl.textContent.trim() : '';
+      const mainHref = mainLinkEl ? mainLinkEl.getAttribute('href') : '#';
+      const subHref = subLinkEl ? subLinkEl.getAttribute('href') : '#';
+
+      const btnContainer = document.createElement('div');
+      btnContainer.className = 'banner-buttons';
+
+      const makeBtn = (txt, href, type) => {
+        if (!txt) return null;
+        const wrap = document.createElement('div');
+        wrap.className = 'button-wrapper';
+        const a = document.createElement('a');
+        a.className = `button ${type}`;
+        a.href = href || '#';
+        a.textContent = txt;
+        wrap.appendChild(a);
+        return wrap;
+      };
+
+      if (buttonCountVal === 'main-only' || buttonCountVal === 'main-and-sub') {
+        const mb = makeBtn(mainText || '主要按鈕', mainHref, 'primary');
+        if (mb) btnContainer.appendChild(mb);
+      }
+      if (buttonCountVal === 'main-and-sub') {
+        const sb = makeBtn(subText || '次要按鈕', subHref, 'secondary');
+        if (sb) btnContainer.appendChild(sb);
+      }
+      if (btnContainer.children.length > 0) content.appendChild(btnContainer);
+
+      // Image preview on the LEFT as requested
+      if (imgSrc) {
+        const img = document.createElement('img');
+        img.src = imgSrc;
+        img.alt = data.imageAlt || '';
+        img.className = 'banner-image';
+        container.appendChild(img);
+      }
+      container.appendChild(content);
+
+      // Append preview
+      block.appendChild(container);
       return;
     }
   } else {
@@ -127,7 +182,7 @@ export default function decorate(block) {
   const content = document.createElement('div');
   content.className = 'banner-content';
 
-  // Prepare image (append after content so it appears on the right in flex row)
+  // Prepare image (append before content so it appears on the left in flex row)
   let imgEl;
   if (data.image) {
     imgEl = document.createElement('img');
@@ -209,7 +264,7 @@ export default function decorate(block) {
     }
   }
 
-  container.appendChild(content);
   if (imgEl) container.appendChild(imgEl);
+  container.appendChild(content);
   block.appendChild(container);
 }
