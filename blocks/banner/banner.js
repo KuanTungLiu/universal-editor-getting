@@ -15,19 +15,18 @@ export default function decorate(block) {
     const text = el.textContent.trim(); // 再抓文字
     const html = el.innerHTML.trim(); // 最後抓 innerHTML
 
+    if (img && img.getAttribute('src')) {
+      data[key] = img.getAttribute('src');
+      return; // 找到圖片就結束該元素的解析
+    }
+
+    // 1.2 接著處理連結 (<a> href)
     if (anchor && anchor.getAttribute('href')) {
       data[key] = anchor.getAttribute('href');
       return; // 找到連結就結束
     }
 
-    // 2. 接著處理圖片 (Image)
-    if (img && img.getAttribute('src')) {
-      data[key] = img.getAttribute('src');
-      // 如果是圖片欄位，通常我們只關心 src，不應被文字覆蓋
-      return; // 找到圖片就結束
-    }
-
-    // 3. 最後處理純文字 (Text) 或 HTML
+    // 1.3 最後處理純文字或 HTML
     if (text) {
       data[key] = text;
     } else {
