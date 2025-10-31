@@ -1,5 +1,8 @@
 .banner {
   background: linear-gradient(135deg, #e8f5f3 0%, #f0f8ff 100%);
+  padding: 60px 40px;
+  position: relative;
+  overflow: hidden;
   width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
@@ -73,7 +76,7 @@
 .banner-buttons .button.secondary {
   background-color: white;
   color: #2db88d;
-  border: 2px solid #2db88d;
+  border: 1px solid #2db88d;
 }
 
 .banner-buttons .button.secondary:hover {
@@ -82,12 +85,10 @@
 
 /* 圖片樣式 */
 .banner-image {
-  flex: 0 0 45%;
-  width: 100%;
+  flex: 0 0 auto;
+  width: 400px;
   height: auto;
-  max-width: none;
   display: block;
-  object-fit: contain;
 }
 
 @media (width <= 768px) {
