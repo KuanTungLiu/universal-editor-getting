@@ -68,7 +68,7 @@ export default async function decorate(block) {
   });
 
   const {
-    title = '最新公告',
+    title = '',
     cfPath = '',
     maxItems = '10',
     showDate = 'true',
