@@ -19,14 +19,13 @@
   ],
   "models": [
     {
-      "id": "datetime-block",
+      "id": "cf-path",
       "fields": [
         {
-          "component": "aem-content",
-          "valueType": "date-time",
-          "name": "dateTimeField",
+          "component": "cfPath",
+          "valueType": "aem-content",
+          "name": "cfPath",
           "label": "CF Path/ 公告資料夾路徑",
-          "description": "Select both date and time",
           "required": true
         }
       ]
