@@ -199,15 +199,15 @@
         "showIf": "buttonCount == 'main-only' || buttonCount == 'main-and-sub'",
         "fields": [
           {
-            "component": "aem-content",
-            "name": "mainButtonLink",
-            "label": "Main Button Link / 主要按鈕連結",
-            "required": true
-          },
-          {
             "component": "text",
             "name": "mainButtonText",
             "label": "重要公告",
+            "required": true
+          },
+          {
+            "component": "aem-content",
+            "name": "mainButtonLink",
+            "label": "Main Button Link / 主要按鈕連結",
             "required": true
           }
         ]
@@ -219,45 +219,18 @@
         "showIf": "buttonCount == 'main-and-sub'",
         "fields": [
           {
-            "component": "aem-content",
-            "name": "subButtonLink",
-            "label": "Sub Button Link / 次要按鈕連結",
-            "required": true
-          },
-          {
             "component": "text",
             "name": "subButtonText",
             "label": "新聞直播",
             "required": true
+          },
+          {
+            "component": "aem-content",
+            "name": "subButtonLink",
+            "label": "Sub Button Link / 次要按鈕連結",
+            "required": true
           }
         ]
-      }
-    ]
-  },
-  {
-    "id": "announcement",
-    "fields": [
-      {
-        "component": "aem-content",
-        "name": "cfPath",
-        "label": "CF Folder Path / 公告資料夾路徑",
-        "valueType": "string",
-        "required": true,
-        "description": "選擇公告的 Content Fragment 資料夾"
-      },
-      {
-        "component": "number",
-        "valueType": "number",
-        "name": "maxItems",
-        "label": "Max Items / 最多顯示數量",
-        "value": 10
-      },
-      {
-        "component": "boolean",
-        "valueType": "boolean",
-        "name": "showDate",
-        "label": "Show Date / 顯示日期",
-        "value": true
       }
     ]
   },

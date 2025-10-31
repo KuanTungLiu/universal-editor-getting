@@ -75,15 +75,15 @@
                     "showIf": "buttonCount == 'main-only' || buttonCount == 'main-and-sub'",
                     "fields": [
                         {
-                            "component": "aem-content",
-                            "name": "mainButtonLink",
-                            "label": "Main Button Link / 主要按鈕連結",
-                            "required": true
-                        },
-                        {
                             "component": "text",
                             "name": "mainButtonText",
                             "label": "重要公告",
+                            "required": true
+                        },
+                        {
+                            "component": "aem-content",
+                            "name": "mainButtonLink",
+                            "label": "Main Button Link / 主要按鈕連結",
                             "required": true
                         }
                     ]
@@ -95,15 +95,15 @@
                     "showIf": "buttonCount == 'main-and-sub'",
                     "fields": [
                         {
-                            "component": "aem-content",
-                            "name": "subButtonLink",
-                            "label": "Sub Button Link / 次要按鈕連結",
-                            "required": true
-                        },
-                        {
                             "component": "text",
                             "name": "subButtonText",
                             "label": "新聞直播",
+                            "required": true
+                        },
+                        {
+                            "component": "aem-content",
+                            "name": "subButtonLink",
+                            "label": "Sub Button Link / 次要按鈕連結",
                             "required": true
                         }
                     ]

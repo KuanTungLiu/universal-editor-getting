@@ -5,48 +5,50 @@ export default function decorate(block) {
 
   const data = {};
 
-  // Parse data-aue-prop authored content (supporting nested keys)
+  // Parse data-aue-prop authored content
   const props = block.querySelectorAll('[data-aue-prop]');
   if (props.length > 0) {
     props.forEach((el) => {
       const fullKey = el.getAttribute('data-aue-prop');
-      const keyParts = fullKey.split('.');
-      // Last part of key (e.g., "mainButtonText" from "mainButtonSettings.mainButtonText")
-      const simpleKey = keyParts[keyParts.length - 1];
+      // eslint-disable-next-line no-console
+      console.log('Processing prop:', fullKey, el);
 
       // Check for image
       const img = el.querySelector('img');
       if (img && img.getAttribute('src')) {
-        data[simpleKey] = img.getAttribute('src');
+        data[fullKey] = img.getAttribute('src');
         return;
       }
 
       // Check for link
       const a = el.querySelector('a[href]');
-      if (a && (simpleKey.toLowerCase().includes('link') || simpleKey.toLowerCase().includes('href'))) {
-        data[simpleKey] = a.getAttribute('href');
+      if (a) {
+        data[fullKey] = a.getAttribute('href');
         return;
       }
 
       // Text content
-      const html = el.innerHTML.trim();
       const text = el.textContent.trim();
-      data[simpleKey] = text || html || '';
+      data[fullKey] = text;
     });
 
     // Editor mode: enhance button visuals
     if (isEditor) {
-      block.querySelectorAll('[data-aue-prop$="ButtonText"]').forEach((el) => {
-        const text = el.textContent.trim();
-        if (!text) return;
-        let btn = el.querySelector('a,button');
-        if (!btn) {
-          btn = document.createElement('button');
-          el.innerHTML = '';
-          el.appendChild(btn);
+      block.querySelectorAll('[data-aue-prop]').forEach((el) => {
+        const key = el.getAttribute('data-aue-prop');
+        if (key.includes('ButtonText')) {
+          const text = el.textContent.trim();
+          if (text) {
+            let btn = el.querySelector('a,button');
+            if (!btn) {
+              btn = document.createElement('button');
+              el.innerHTML = '';
+              el.appendChild(btn);
+            }
+            btn.classList.add('button', 'primary');
+            btn.textContent = text;
+          }
         }
-        btn.classList.add('button', 'primary');
-        btn.textContent = text;
       });
       return;
     }
@@ -96,6 +98,12 @@ export default function decorate(block) {
   }
 
   // Runtime render: build DOM from parsed data
+  // DEBUG: Log parsed data
+  // eslint-disable-next-line no-console
+  console.log('Banner data parsed:', data);
+  // eslint-disable-next-line no-console
+  console.log('Button count:', data.buttonCount);
+
   block.innerHTML = '';
 
   const container = document.createElement('div');
@@ -113,7 +121,7 @@ export default function decorate(block) {
     container.appendChild(imgEl);
   }
 
-  // Add title (ensure plain text, no child elements)
+  // Add title
   if (data.title) {
     const titleEl = document.createElement('h1');
     titleEl.className = 'banner-title';
@@ -121,7 +129,7 @@ export default function decorate(block) {
     content.appendChild(titleEl);
   }
 
-  // Add subtitle (allows rich HTML)
+  // Add subtitle
   if (data.subtitle) {
     const subtitleEl = document.createElement('div');
     subtitleEl.className = 'banner-subtitle';
@@ -130,13 +138,18 @@ export default function decorate(block) {
   }
 
   // Add buttons
-  const buttonCount = norm(data.buttonCount).toLowerCase();
-  const hasMainText = !!norm(data.mainButtonText);
-  const hasSubText = !!norm(data.subButtonText);
+  const buttonCount = (data.buttonCount || '').toLowerCase().trim();
+  const hasMainText = !!(data.mainButtonText || '').trim();
+  const hasSubText = !!(data.subButtonText || '').trim();
+
+  // eslint-disable-next-line no-console
+  console.log('Button logic:', { buttonCount, hasMainText, hasSubText });
 
   let shouldShowButtons = false;
   if (buttonCount === 'main-only' && hasMainText) shouldShowButtons = true;
-  if (buttonCount === 'main-and-sub' && (hasMainText || hasSubText)) shouldShowButtons = true;
+  if (buttonCount === 'main-and-sub' && (hasMainText || hasSubText)) {
+    shouldShowButtons = true;
+  }
 
   if (shouldShowButtons) {
     const btnContainer = document.createElement('div');
