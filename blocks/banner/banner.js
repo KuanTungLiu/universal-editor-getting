@@ -116,7 +116,8 @@ export default function decorate(block) {
       }
       if (btnContainer.children.length > 0) content.appendChild(btnContainer);
 
-      // Image preview on the LEFT as requested
+      // Image on the RIGHT in editor preview
+      container.appendChild(content);
       if (imgSrc) {
         const img = document.createElement('img');
         img.src = imgSrc;
@@ -124,7 +125,6 @@ export default function decorate(block) {
         img.className = 'banner-image';
         container.appendChild(img);
       }
-      container.appendChild(content);
 
       // Append preview
       block.appendChild(container);
@@ -190,7 +190,7 @@ export default function decorate(block) {
   const content = document.createElement('div');
   content.className = 'banner-content';
 
-  // Prepare image (append before content so it appears on the left in flex row)
+  // Prepare image (append after content so it appears on the right in flex row)
   let imgEl;
   if (data.image) {
     imgEl = document.createElement('img');
@@ -272,7 +272,7 @@ export default function decorate(block) {
     }
   }
 
-  if (imgEl) container.appendChild(imgEl);
   container.appendChild(content);
+  if (imgEl) container.appendChild(imgEl);
   block.appendChild(container);
 }
