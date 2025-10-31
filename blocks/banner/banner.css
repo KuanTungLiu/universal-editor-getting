@@ -17,24 +17,15 @@
   gap: 20px;
 }
 
-/* 強化顏色優先度，避免被其他容器或元素選擇器覆蓋 */
-.banner-title,
-.banner-title * {
-  color: #2db88d;
-}
-
 .banner-title {
+  color: #2db88d;
   font-size: 48px;
   font-weight: bold;
   margin: 0 0 20px;
 }
 
-.banner-subtitle,
-.banner-subtitle * {
-  color: #666;
-}
-
 .banner-subtitle {
+  color: #666;
   font-size: 16px;
   line-height: 1.6;
   margin: 0 0 20px;

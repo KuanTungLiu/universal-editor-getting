@@ -1,117 +1,57 @@
-/**
- * Banner Block for AEM Edge Delivery Services
- * Robust parsing for both table-based blocks and data-aue-prop authored content
- * - title uses textContent to avoid invalid HTML in <h1>
- * - subtitle keeps rich text via innerHTML
- * - supports nested data-aue-prop keys like "mainButtonSettings.mainButtonText"
- * - buttons render if text exists (buttonCount just overrides)
- */
-
 export default function decorate(block) {
   const isEditor = block.hasAttribute('data-aue-resource');
 
   const norm = (v) => (typeof v === 'string' ? v.trim() : v);
-  const lastKey = (k) => (k || '').split('.').pop();
-
-  const firstUrlFromSrcset = (srcset) => {
-    if (!srcset) return '';
-    const first = srcset.split(',')[0]?.trim();
-    return first ? first.split(' ')[0] : '';
-  };
-
-  const normalizeButtonCount = (raw) => {
-    const v = String(raw || '').toLowerCase().trim();
-    if (['none', '0', '', 'no', 'false'].includes(v)) return 'none';
-    if (['main-only', 'main only', 'single', '1', 'one', 'primary'].includes(v)) return 'main-only';
-    if (['main-and-sub', 'main and sub', 'double', '2', 'two', 'primary-secondary'].includes(v)) return 'main-and-sub';
-    return 'none';
-  };
 
   const data = {};
 
-  // A) data-aue-prop authored
+  // Parse data-aue-prop authored content (supporting nested keys)
   const props = block.querySelectorAll('[data-aue-prop]');
   if (props.length > 0) {
     props.forEach((el) => {
-      const rawKey = el.getAttribute('data-aue-prop');
-      const key = lastKey(rawKey);
-      if (!key) return;
+      const fullKey = el.getAttribute('data-aue-prop');
+      const keyParts = fullKey.split('.');
+      // Last part of key (e.g., "mainButtonText" from "mainButtonSettings.mainButtonText")
+      const simpleKey = keyParts[keyParts.length - 1];
 
-      // Prefer picture
-      const picture = el.querySelector('picture');
-      if (picture) {
-        data[key] = picture.cloneNode(true);
-        const picImg = picture.querySelector('img');
-        if (picImg?.getAttribute('alt')) data[`${key}Alt`] = picImg.getAttribute('alt');
-        return;
-      }
-
-      // Then img (src or data-src)
+      // Check for image
       const img = el.querySelector('img');
-      if (img) {
-        const src = img.getAttribute('src') || img.getAttribute('data-src');
-        if (src) {
-          data[key] = { src, alt: img.getAttribute('alt') || '' };
-          return;
-        }
-      }
-
-      // Then source srcset
-      const source = el.querySelector('source');
-      if (source?.getAttribute('srcset')) {
-        const src = firstUrlFromSrcset(source.getAttribute('srcset'));
-        if (src) {
-          data[key] = { src, alt: '' };
-          return;
-        }
-      }
-
-      // Link
-      const a = el.querySelector('a[href]');
-      if (a && (key.toLowerCase().endsWith('link') || a.textContent.trim().length === 0)) {
-        data[key] = a.getAttribute('href');
+      if (img && img.getAttribute('src')) {
+        data[simpleKey] = img.getAttribute('src');
         return;
       }
 
-      // Text/HTML
+      // Check for link
+      const a = el.querySelector('a[href]');
+      if (a && (simpleKey.toLowerCase().includes('link') || simpleKey.toLowerCase().includes('href'))) {
+        data[simpleKey] = a.getAttribute('href');
+        return;
+      }
+
+      // Text content
       const html = el.innerHTML.trim();
       const text = el.textContent.trim();
-
-      // title: use plain text to avoid invalid markup inside <h1>
-      if (key === 'title') {
-        data[key] = text || html || '';
-        return;
-      }
-
-      // subtitle is richtext
-      if (key === 'subtitle') {
-        data[key] = html || text || '';
-        return;
-      }
-
-      data[key] = text || html || '';
+      data[simpleKey] = text || html || '';
     });
 
-    // Editor: only enhance button visuals; don't wipe authored DOM
+    // Editor mode: enhance button visuals
     if (isEditor) {
-      const btnTextNodes = block.querySelectorAll('[data-aue-prop$="ButtonText"]');
-      btnTextNodes.forEach((el) => {
+      block.querySelectorAll('[data-aue-prop$="ButtonText"]').forEach((el) => {
         const text = el.textContent.trim();
         if (!text) return;
-        let clickable = el.querySelector('a,button');
-        if (!clickable) {
-          clickable = document.createElement('button');
-          clickable.type = 'button';
+        let btn = el.querySelector('a,button');
+        if (!btn) {
+          btn = document.createElement('button');
           el.innerHTML = '';
-          el.appendChild(clickable);
+          el.appendChild(btn);
         }
-        clickable.classList.add('button', 'primary');
-        clickable.textContent = text;
+        btn.classList.add('button', 'primary');
+        btn.textContent = text;
       });
       return;
     }
   } else {
-    // B) table-authored fallback
+    // Fallback: parse table-based rows
     const rows = [...block.children];
     rows.forEach((row) => {
       const cells = [...row.children];
@@ -120,34 +60,42 @@ export default function decorate(block) {
         const cell = cells[1];
         data[key] = cell.innerHTML.trim();
 
-        if (key.toLowerCase().endsWith('buttonlink') || key.toLowerCase().endsWith('link')) {
+        // Extract link href if present
+        if (key.toLowerCase().includes('link')) {
           const link = cell.querySelector('a[href]');
           if (link) data[key] = link.getAttribute('href');
+        }
+
+        // Extract image src if present
+        if (key.toLowerCase().includes('image')) {
+          const img = cell.querySelector('img');
+          if (img && img.getAttribute('src')) data[key] = img.getAttribute('src');
         }
       }
     });
 
-    // Editor enhancement for table mode
+    // Editor mode: enhance buttons in table mode
     if (isEditor) {
-      const buttonRows = rows.filter((row) => row.children?.[0]?.textContent?.trim().toLowerCase().endsWith('buttontext'));
-      buttonRows.forEach((row) => {
-        const btnCell = row.children?.[1];
-        if (!btnCell) return;
-        const text = btnCell.textContent.trim();
-        if (text) {
-          const btn = document.createElement('button');
-          btn.className = 'button primary';
-          btn.type = 'button';
-          btn.textContent = text;
-          btnCell.innerHTML = '';
-          btnCell.appendChild(btn);
+      rows.forEach((row) => {
+        if (!row.children[0]) return;
+        const key = row.children[0].textContent.trim().toLowerCase();
+        if (key.includes('buttontext') && row.children[1]) {
+          const text = row.children[1].textContent.trim();
+          if (text) {
+            const btn = document.createElement('button');
+            btn.className = 'button primary';
+            btn.type = 'button';
+            btn.textContent = text;
+            row.children[1].innerHTML = '';
+            row.children[1].appendChild(btn);
+          }
         }
       });
       return;
     }
   }
 
-  // Runtime render
+  // Runtime render: build DOM from parsed data
   block.innerHTML = '';
 
   const container = document.createElement('div');
@@ -156,30 +104,16 @@ export default function decorate(block) {
   const content = document.createElement('div');
   content.className = 'banner-content';
 
-  // Image as sibling of content (matches your CSS)
+  // Add image
   if (data.image) {
-    if (data.image instanceof Node) {
-      const node = data.image.cloneNode(true);
-      node.classList?.add?.('banner-image');
-      const innerImg = node.querySelector?.('img');
-      if (innerImg) innerImg.classList.add('banner-image');
-      container.appendChild(node);
-    } else if (typeof data.image === 'object' && data.image.src) {
-      const imgEl = document.createElement('img');
-      imgEl.src = data.image.src;
-      imgEl.alt = data.image.alt || data.imageAlt || '';
-      imgEl.className = 'banner-image';
-      container.appendChild(imgEl);
-    } else if (typeof data.image === 'string') {
-      const imgEl = document.createElement('img');
-      imgEl.src = data.image;
-      imgEl.alt = data.imageAlt || '';
-      imgEl.className = 'banner-image';
-      container.appendChild(imgEl);
-    }
+    const imgEl = document.createElement('img');
+    imgEl.src = data.image;
+    imgEl.alt = data.imageAlt || '';
+    imgEl.className = 'banner-image';
+    container.appendChild(imgEl);
   }
 
-  // Title: text only into <h1> to avoid invalid nested markup
+  // Add title (ensure plain text, no child elements)
   if (data.title) {
     const titleEl = document.createElement('h1');
     titleEl.className = 'banner-title';
@@ -187,7 +121,7 @@ export default function decorate(block) {
     content.appendChild(titleEl);
   }
 
-  // Subtitle: rich text allowed
+  // Add subtitle (allows rich HTML)
   if (data.subtitle) {
     const subtitleEl = document.createElement('div');
     subtitleEl.className = 'banner-subtitle';
@@ -195,62 +129,56 @@ export default function decorate(block) {
     content.appendChild(subtitleEl);
   }
 
-  // Buttons (render if text exists; buttonCount only overrides)
+  // Add buttons
+  const buttonCount = norm(data.buttonCount).toLowerCase();
   const hasMainText = !!norm(data.mainButtonText);
   const hasSubText = !!norm(data.subButtonText);
 
-  let mode = normalizeButtonCount(data.buttonCount);
-  if (mode === 'none') {
-    if (hasMainText && hasSubText) mode = 'main-and-sub';
-    else if (hasMainText) mode = 'main-only';
-  }
+  let shouldShowButtons = false;
+  if (buttonCount === 'main-only' && hasMainText) shouldShowButtons = true;
+  if (buttonCount === 'main-and-sub' && (hasMainText || hasSubText)) shouldShowButtons = true;
 
-  const createButton = (text, link, type = 'primary') => {
-    const t = norm(text);
-    if (!t) return null;
+  if (shouldShowButtons) {
+    const btnContainer = document.createElement('div');
+    btnContainer.className = 'banner-buttons';
 
-    const wrapper = document.createElement('div');
-    wrapper.className = 'button-wrapper';
+    const createBtn = (text, link, type = 'primary') => {
+      const t = norm(text);
+      const l = norm(link);
+      if (!t || !l) return null;
 
-    const a = document.createElement('a');
-    a.className = `button ${type}`;
-    a.href = norm(link) || '#';
-    a.textContent = t;
-    try {
-      const url = new URL(a.href, window.location.href);
-      if (url.origin !== window.location.origin) {
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-      }
-    } catch { /* ignore */ }
+      const wrapper = document.createElement('div');
+      wrapper.className = 'button-wrapper';
 
-    wrapper.appendChild(a);
-    return wrapper;
-  };
+      const a = document.createElement('a');
+      a.className = `button ${type}`;
+      a.href = l;
+      a.textContent = t;
+      wrapper.appendChild(a);
+      return wrapper;
+    };
 
-  if (mode !== 'none') {
-    const btnBox = document.createElement('div');
-    btnBox.className = 'banner-buttons';
-
-    if (mode === 'main-only' || mode === 'main-and-sub') {
-      const mainBtn = createButton(
+    if (buttonCount === 'main-only' || buttonCount === 'main-and-sub') {
+      const mainBtn = createBtn(
         data.mainButtonText,
         data.mainButtonLink,
-        (String(data.mainButtonType || 'primary').toLowerCase().includes('secondary') ? 'secondary' : 'primary'),
+        'primary',
       );
-      if (mainBtn) btnBox.appendChild(mainBtn);
+      if (mainBtn) btnContainer.appendChild(mainBtn);
     }
 
-    if (mode === 'main-and-sub') {
-      const subBtn = createButton(
+    if (buttonCount === 'main-and-sub') {
+      const subBtn = createBtn(
         data.subButtonText,
         data.subButtonLink,
-        (String(data.subButtonType || 'secondary').toLowerCase().includes('primary') ? 'primary' : 'secondary'),
+        'secondary',
       );
-      if (subBtn) btnBox.appendChild(subBtn);
+      if (subBtn) btnContainer.appendChild(subBtn);
     }
 
-    if (btnBox.children.length > 0) content.appendChild(btnBox);
+    if (btnContainer.children.length > 0) {
+      content.appendChild(btnContainer);
+    }
   }
 
   container.appendChild(content);
