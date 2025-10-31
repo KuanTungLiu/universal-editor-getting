@@ -32,8 +32,19 @@ export default function decorate(block) {
       data[fullKey] = text;
     });
 
-    // Editor mode: enhance button visuals
+    // Editor mode: enhance visuals without rebuilding DOM
     if (isEditor) {
+      // Apply classes so authored elements get block styles
+      const titleEl = block.querySelector('[data-aue-prop="title"]');
+      if (titleEl) titleEl.classList.add('banner-title');
+
+      const subtitleEl = block.querySelector('[data-aue-prop="subtitle"]');
+      if (subtitleEl) subtitleEl.classList.add('banner-subtitle');
+
+      const imageEl = block.querySelector('[data-aue-prop="image"]');
+      if (imageEl) imageEl.classList.add('banner-image');
+
+      // Render buttons preview when authoring
       block.querySelectorAll('[data-aue-prop]').forEach((el) => {
         const key = el.getAttribute('data-aue-prop');
         if (key.includes('ButtonText')) {
