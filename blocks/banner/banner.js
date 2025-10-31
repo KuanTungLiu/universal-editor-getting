@@ -44,6 +44,10 @@ export default function decorate(block) {
       const imageEl = block.querySelector('[data-aue-prop="image"]');
       if (imageEl) imageEl.classList.add('banner-image');
 
+      // Hide raw buttonCount text in editor view
+      const buttonCountEl = block.querySelector('[data-aue-prop="buttonCount"]');
+      if (buttonCountEl) buttonCountEl.style.display = 'none';
+
       // Render buttons preview when authoring
       block.querySelectorAll('[data-aue-prop]').forEach((el) => {
         const key = el.getAttribute('data-aue-prop');
@@ -123,13 +127,13 @@ export default function decorate(block) {
   const content = document.createElement('div');
   content.className = 'banner-content';
 
-  // Add image
+  // Prepare image (append after content so it appears on the right in flex row)
+  let imgEl;
   if (data.image) {
-    const imgEl = document.createElement('img');
+    imgEl = document.createElement('img');
     imgEl.src = data.image;
     imgEl.alt = data.imageAlt || '';
     imgEl.className = 'banner-image';
-    container.appendChild(imgEl);
   }
 
   // Add title
@@ -206,5 +210,6 @@ export default function decorate(block) {
   }
 
   container.appendChild(content);
+  if (imgEl) container.appendChild(imgEl);
   block.appendChild(container);
 }

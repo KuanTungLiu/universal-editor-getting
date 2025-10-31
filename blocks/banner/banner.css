@@ -8,6 +8,10 @@
 .banner-container {
   max-width: 1200px;
   margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
 }
 
 .banner-content {
@@ -76,13 +80,12 @@
 
 /* 圖片樣式 */
 .banner-image {
-  flex-shrink: 0;
-}
-
-.banner-image img {
-  margin-top: 30px;
-  justify-content: center;
-  display: flex;
+  flex: 0 0 40%;
+  max-width: 480px;
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
 }
 
 @media (width <= 768px) {
@@ -105,14 +108,14 @@
     margin: 5px 0;
   }
 
-  .banner-image {
-    margin-top: 30px;
-    display: flex;
-    justify-content: center;
+  .banner-container {
+    flex-direction: column;
+    gap: 24px;
   }
 
-  .banner-image img {
+  .banner-image {
     width: 220px;
     height: auto;
+    margin: 0 auto;
   }
 }
