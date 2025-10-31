@@ -17,9 +17,18 @@ export default function decorate(block) {
 
     if (anchor && anchor.getAttribute('href')) {
       data[key] = anchor.getAttribute('href');
-    } else if (img && img.getAttribute('src')) {
+      return; // 找到連結就結束
+    }
+
+    // 2. 接著處理圖片 (Image)
+    if (img && img.getAttribute('src')) {
       data[key] = img.getAttribute('src');
-    } else if (text) {
+      // 如果是圖片欄位，通常我們只關心 src，不應被文字覆蓋
+      return; // 找到圖片就結束
+    }
+
+    // 3. 最後處理純文字 (Text) 或 HTML
+    if (text) {
       data[key] = text;
     } else {
       data[key] = html;
