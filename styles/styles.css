@@ -9,6 +9,11 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 :root {
   /* colors */
@@ -75,7 +80,7 @@ body {
   margin: 0;
   background-color: var(--background-color);
   color: var(--text-color);
-  font-family: var(--body-font-family);
+  font-family: "Microsoft JhengHei", "微軟正黑體", Arial, sans-serif;
   font-size: var(--body-font-size-m);
   line-height: 1.6;
 }
