@@ -37,7 +37,15 @@ export default function decorate(block) {
       const titleEl = block.querySelector('[data-aue-prop="title"]');
       const subtitleEl = block.querySelector('[data-aue-prop="subtitle"]');
       const imageWrapper = block.querySelector('[data-aue-prop="image"]');
-      const imageInWrapper = imageWrapper && imageWrapper.querySelector('img');
+      // Support both cases: data-aue-prop on <img> itself or on a wrapper containing <img>
+      let imageInWrapper = null;
+      if (imageWrapper) {
+        if (imageWrapper.tagName === 'IMG') {
+          imageInWrapper = imageWrapper;
+        } else {
+          imageInWrapper = imageWrapper.querySelector('img');
+        }
+      }
       const buttonCountEl = block.querySelector('[data-aue-prop="buttonCount"]');
 
       // Values from DOM when available for fidelity
@@ -99,11 +107,11 @@ export default function decorate(block) {
       };
 
       if (buttonCountVal === 'main-only' || buttonCountVal === 'main-and-sub') {
-        const mb = makeBtn(mainText || '主要按鈕', mainHref, 'primary');
+        const mb = makeBtn(mainText || '重要公告', mainHref, 'primary');
         if (mb) btnContainer.appendChild(mb);
       }
       if (buttonCountVal === 'main-and-sub') {
-        const sb = makeBtn(subText || '次要按鈕', subHref, 'secondary');
+        const sb = makeBtn(subText || '新聞直播', subHref, 'secondary');
         if (sb) btnContainer.appendChild(sb);
       }
       if (btnContainer.children.length > 0) content.appendChild(btnContainer);

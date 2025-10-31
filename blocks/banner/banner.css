@@ -5,6 +5,13 @@
   overflow: hidden;
 }
 
+/* Make the banner full-bleed (break out of centered section wrapper) */
+.banner {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+
 .banner-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -19,6 +26,8 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 20px;
+  flex: 1 1 55%;
+  min-width: 0;
 }
 
 .banner-title {
