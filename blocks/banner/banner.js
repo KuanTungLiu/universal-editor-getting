@@ -1,25 +1,39 @@
+/**
+ * Banner Block for AEM Edge Delivery Services
+ * Supports dynamic button rendering based on buttonCount selection
+ */
+
 export default function decorate(block) {
-  // Parse block content
+  // 1. 解析 block 裡的 data-aue-prop
   const data = {};
   const props = block.querySelectorAll('[data-aue-prop]');
 
   props.forEach((el) => {
     const key = el.getAttribute('data-aue-prop');
-    const link = el.querySelector('a');
-    data[key] = link ? link.getAttribute('href') : el.textContent.trim();
+    const anchor = el.querySelector('a'); // 如果有 <a>，用 href
+    data[key] = anchor ? anchor.getAttribute('href') : el.textContent.trim();
   });
 
-  // Clear for runtime mode
+  // 2. 清空 block
   block.innerHTML = '';
 
-  // Create container structure
+  // 3. 建立 container 結構
   const container = document.createElement('div');
   container.className = 'banner-container';
 
   const content = document.createElement('div');
   content.className = 'banner-content';
 
-  // Add title
+  // 4. 加入圖片（放在 content 裡）
+  if (data.image) {
+    const imgEl = document.createElement('img');
+    imgEl.src = data.image;
+    imgEl.alt = data.imageAlt || '';
+    imgEl.className = 'banner-image';
+    content.appendChild(imgEl);
+  }
+
+  // 5. 加入標題
   if (data.title) {
     const titleEl = document.createElement('h1');
     titleEl.className = 'banner-title';
@@ -27,7 +41,7 @@ export default function decorate(block) {
     content.appendChild(titleEl);
   }
 
-  // Add subtitle
+  // 6. 加入副標題
   if (data.subtitle) {
     const subtitleEl = document.createElement('div');
     subtitleEl.className = 'banner-subtitle';
@@ -35,16 +49,7 @@ export default function decorate(block) {
     content.appendChild(subtitleEl);
   }
 
-  // Add image
-  if (data.image) {
-    const imgEl = document.createElement('img');
-    imgEl.src = data.image;
-    imgEl.alt = data.imageAlt || '';
-    imgEl.className = 'banner-image';
-    container.appendChild(imgEl);
-  }
-
-  // Handle buttons
+  // 7. 處理按鈕
   const buttonCount = data.buttonCount || 'none';
   if (buttonCount !== 'none') {
     const buttonContainer = document.createElement('div');
@@ -65,11 +70,13 @@ export default function decorate(block) {
       return wrapper;
     };
 
+    // main button
     if (buttonCount === 'main-only' || buttonCount === 'main-and-sub') {
       const mainBtn = createButton(data.mainButtonText, data.mainButtonLink, 'primary');
       if (mainBtn) buttonContainer.appendChild(mainBtn);
     }
 
+    // sub button
     if (buttonCount === 'main-and-sub') {
       const subBtn = createButton(data.subButtonText, data.subButtonLink, 'secondary');
       if (subBtn) buttonContainer.appendChild(subBtn);
@@ -80,6 +87,9 @@ export default function decorate(block) {
     }
   }
 
+  // 8. 將 content 加到 container
   container.appendChild(content);
+
+  // 9. 將 container 加回 block
   block.appendChild(container);
 }
