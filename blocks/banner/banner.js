@@ -1,46 +1,13 @@
-/**
- * Banner Block for AEM Edge Delivery Services
- * Supports dynamic button rendering based on buttonCount selection
- */
-
 export default function decorate(block) {
-  const isEditor = block.hasAttribute('data-aue-resource');
-
   // Parse block content
   const data = {};
   const props = block.querySelectorAll('[data-aue-prop]');
 
   props.forEach((el) => {
     const key = el.getAttribute('data-aue-prop');
-    const value = el.textContent.trim();
-
-    // 處理 aem-content 類型（例如連結）
-    if (el.querySelector('a')) {
-      data[key] = el.querySelector('a').getAttribute('href');
-    } else {
-      data[key] = value;
-    }
+    const link = el.querySelector('a');
+    data[key] = link ? link.getAttribute('href') : el.textContent.trim();
   });
-
-  // If in editor mode, only enhance buttons
-  if (isEditor) {
-    const buttonRows = rows.filter((row) => {
-      const key = row.children[0].textContent.trim();
-      return key.endsWith('ButtonText');
-    });
-
-    buttonRows.forEach((row) => {
-      const btnCell = row.children[1];
-      if (btnCell.textContent.trim()) {
-        const btn = document.createElement('button');
-        btn.className = 'button primary';
-        btn.textContent = btnCell.textContent.trim();
-        btnCell.innerHTML = '';
-        btnCell.appendChild(btn);
-      }
-    });
-    return;
-  }
 
   // Clear for runtime mode
   block.innerHTML = '';
@@ -83,7 +50,6 @@ export default function decorate(block) {
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'banner-buttons';
 
-    // Helper function to create button
     const createButton = (text, link, type = 'primary') => {
       if (!text || !link) return null;
 
@@ -99,23 +65,13 @@ export default function decorate(block) {
       return wrapper;
     };
 
-    // Add main button
     if (buttonCount === 'main-only' || buttonCount === 'main-and-sub') {
-      const mainBtn = createButton(
-        data.mainButtonText,
-        data.mainButtonLink,
-        data.mainButtonType || 'primary',
-      );
+      const mainBtn = createButton(data.mainButtonText, data.mainButtonLink, 'primary');
       if (mainBtn) buttonContainer.appendChild(mainBtn);
     }
 
-    // Add sub button
     if (buttonCount === 'main-and-sub') {
-      const subBtn = createButton(
-        data.subButtonText,
-        data.subButtonLink,
-        data.subButtonType || 'secondary',
-      );
+      const subBtn = createButton(data.subButtonText, data.subButtonLink, 'secondary');
       if (subBtn) buttonContainer.appendChild(subBtn);
     }
 
@@ -124,7 +80,6 @@ export default function decorate(block) {
     }
   }
 
-  // Finalize
   container.appendChild(content);
   block.appendChild(container);
 }
