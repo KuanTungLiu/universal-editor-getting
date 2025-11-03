@@ -37,93 +37,72 @@ function extractCfPath(el) {
 }
 
 async function fetchAnnouncements(cfPath) {
-  const cubQuery = `
-    query CubAnnouncementsByPath($path: ID!) {
-      cubAnnouncementPaginated(
-        filter: {
-          _path: {
-            _expressions: [{ value: $path _operator: STARTS_WITH }]
-          }
-        }
-      ) {
-        edges {
-          node {
-            _path
-            noticeTitle
-            noticeDate
-            noticeContent { plaintext html }
-          }
-        }
-      }
-    }
-  `;
-
-  const listQuery = `
-    query AnnouncementsByPath($path: ID!) {
-      announcementList(
-        filter: {
-          _path: { _expressions: [{ value: $path _operator: STARTS_WITH }] }
-        }
-        _sort: "noticeDate DESC"
-      ) {
-        items {
-          _path
-          noticeTitle
-          noticeDate
-          noticeContent { plaintext }
-        }
-      }
-    }
-  `;
-
-  const exec = async (query) => {
-    const res = await fetch('/graphql/execute.json', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { path: cfPath } }),
-    });
-    if (!res.ok) throw new Error('network');
-    return res.json();
-  };
-
   try {
-    // Try cubAnnouncementPaginated (edges/nodes)
-    const d1 = await exec(cubQuery);
-    const edges = d1?.data?.cubAnnouncementPaginated?.edges;
-    if (Array.isArray(edges) && edges.length) {
-      const pathKey = '_path';
-      return edges
-        .map((e) => e?.node)
-        .filter(Boolean)
-        .map((n) => ({
-          path: (n && n[pathKey]) || n.path,
-          title: n.noticeTitle,
-          date: n.noticeDate,
-          excerpt: n.noticeContent?.plaintext || '',
-        }))
-        .sort((a, b) => new Date(b.date) - new Date(a.date));
-    }
-  } catch {
-    // ignore and try fallback
-  }
+    // Query: list all content fragments in the folder path
+    // cfPath example: /content/dam/ktliu-testing/公告
+    // Use AEM JCR API to fetch content fragments
+    const searchUrl = `${cfPath}.json?limit=1000`;
 
-  try {
-    // Fallback to announcementList (items)
-    const d2 = await exec(listQuery);
-    const items = d2?.data?.announcementList?.items;
-    if (Array.isArray(items)) {
-      const pathKey = '_path';
-      return items
-        .map((n) => ({
-          path: (n && n[pathKey]) || n.path,
-          title: n.noticeTitle,
-          date: n.noticeDate,
-          excerpt: n.noticeContent?.plaintext || '',
-        }))
-        .sort((a, b) => new Date(b.date) - new Date(a.date));
+    // eslint-disable-next-line no-console
+    console.log('[Announcement] Fetching from:', searchUrl);
+
+    const res = await fetch(searchUrl);
+    if (!res.ok) {
+      // eslint-disable-next-line no-console
+      console.error('[Announcement] Fetch failed with status:', res.status);
+      return { error: true, message: '無法讀取公告資料夾' };
     }
-    return [];
-  } catch {
+
+    const data = await res.json();
+    // eslint-disable-next-line no-console
+    console.log('[Announcement] Raw response:', data);
+
+    // Parse the response - AEM returns children in various formats
+    // Try direct children array first
+    let items = [];
+    if (Array.isArray(data)) {
+      items = data;
+    } else if (data.children && Array.isArray(data.children)) {
+      items = data.children;
+    } else if (data.items && Array.isArray(data.items)) {
+      items = data.items;
+    }
+
+    // Filter and map to standardized format
+    const announcements = items
+      .filter((item) => item && typeof item === 'object')
+      .map((item) => {
+        // Try various possible property names
+        const pathKey = 'jcr:path';
+        const titleKey = 'jcr:title';
+        const createdKey = 'jcr:created';
+        const undscorePath = '_path'; // avoid no-underscore-dangle
+        const title = item[titleKey] || item.title || item.noticeTitle || item.name || '';
+        const date = item[createdKey] || item.date || item.noticeDate || item.modified || '';
+        const excerpt = item.excerpt || item.noticeContent?.plaintext || item.description || '';
+
+        return {
+          path: item[pathKey] || item.path || item[undscorePath] || cfPath,
+          title: title.toString().trim(),
+          date: date.toString().trim(),
+          excerpt: excerpt.toString().trim(),
+        };
+      })
+      .filter((item) => item.title) // Keep only items with title
+      .sort((a, b) => {
+        // Sort by date descending (newest first)
+        const dateA = new Date(a.date || 0);
+        const dateB = new Date(b.date || 0);
+        return dateB - dateA;
+      });
+
+    // eslint-disable-next-line no-console
+    console.log('[Announcement] Parsed announcements:', announcements);
+
+    return announcements;
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[Announcement] Error fetching:', err);
     return { error: true, message: '無法連線至伺服器' };
   }
 }
