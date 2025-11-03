@@ -99,17 +99,44 @@ function formatDate(dateString) {
 }
 
 export default async function decorate(block) {
-  const rows = [...block.children];
   const data = {};
 
-  rows.forEach((row) => {
-    const cells = [...row.children];
-    if (cells.length >= 2) {
-      const key = cells[0].textContent.trim();
-      const value = cells[1].textContent.trim();
-      data[key] = value;
-    }
-  });
+  // Prefer Universal Editor authord data via data-aue-prop
+  const props = block.querySelectorAll('[data-aue-prop]');
+  if (props.length > 0) {
+    props.forEach((el) => {
+      const key = el.getAttribute('data-aue-prop');
+      // cfPath is an aem-content picker, usually renders an <a>
+      const link = el.querySelector('a[href]');
+      if (key === 'cfPath' && link) {
+        data.cfPath = link.getAttribute('href');
+        return;
+      }
+      // numbers/booleans
+      const txt = el.textContent.trim();
+      if (key === 'maxItems') {
+        data.maxItems = txt || '10';
+        return;
+      }
+      if (key === 'showDate') {
+        data.showDate = (txt || 'true');
+        return;
+      }
+      // optional title if present in authored content
+      if (key === 'title') data.title = txt;
+    });
+  } else {
+    // Fallback: parse table-like authored content (two-column rows)
+    const rows = [...block.children];
+    rows.forEach((row) => {
+      const cells = [...row.children];
+      if (cells.length >= 2) {
+        const key = cells[0].textContent.trim();
+        const value = cells[1].textContent.trim();
+        data[key] = value;
+      }
+    });
+  }
 
   const {
     title = '',
