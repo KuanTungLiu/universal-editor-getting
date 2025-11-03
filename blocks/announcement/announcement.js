@@ -1,44 +1,89 @@
 async function fetchAnnouncements(cfPath) {
-  try {
-    const query = `
-      {
-        announcementList(
-          filter: {
-            _path: {
-              _expressions: [{
-                value: "${cfPath}"
-                _operator: STARTS_WITH
-              }]
-            }
+  // Try user's query shape first (cubAnnouncementPaginated), then fallback
+  const cubQuery = `
+    query CubAnnouncementsByPath($path: ID!) {
+      cubAnnouncementPaginated(
+        filter: {
+          _path: {
+            _expressions: [{ value: $path _operator: STARTS_WITH }]
           }
-          _sort: "noticeDate DESC"
-        ) {
-          items {
-            path: _path
+        }
+      ) {
+        edges {
+          node {
+            _path
             noticeTitle
             noticeDate
-            noticeContent {
-              plaintext
-            }
+            noticeContent { plaintext html }
           }
         }
       }
-    `;
-
-    const response = await fetch('/graphql/execute.json', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query }),
-    });
-
-    if (!response.ok) {
-      return { error: true, message: '伺服器回應錯誤' };
     }
+  `;
 
-    const data = await response.json();
-    return data?.data?.announcementList?.items || [];
+  const listQuery = `
+    query AnnouncementsByPath($path: ID!) {
+      announcementList(
+        filter: {
+          _path: { _expressions: [{ value: $path _operator: STARTS_WITH }] }
+        }
+        _sort: "noticeDate DESC"
+      ) {
+        items {
+          _path
+          noticeTitle
+          noticeDate
+          noticeContent { plaintext }
+        }
+      }
+    }
+  `;
+
+  const exec = async (query) => {
+    const res = await fetch('/graphql/execute.json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables: { path: cfPath } }),
+    });
+    if (!res.ok) throw new Error('network');
+    return res.json();
+  };
+
+  try {
+    // Try cubAnnouncementPaginated (edges/nodes)
+    const d1 = await exec(cubQuery);
+    const edges = d1?.data?.cubAnnouncementPaginated?.edges;
+    if (Array.isArray(edges) && edges.length) {
+      return edges
+        .map((e) => e?.node)
+        .filter(Boolean)
+        .map((n) => ({
+          path: n.path,
+          title: n.noticeTitle,
+          date: n.noticeDate,
+          excerpt: n.noticeContent?.plaintext || '',
+        }))
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+  } catch {
+    // ignore and try fallback
+  }
+
+  try {
+    // Fallback to announcementList (items)
+    const d2 = await exec(listQuery);
+    const items = d2?.data?.announcementList?.items;
+    if (Array.isArray(items)) {
+      return items
+        .map((n) => ({
+          path: n.path,
+          title: n.noticeTitle,
+          date: n.noticeDate,
+          excerpt: n.noticeContent?.plaintext || '',
+        }))
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+    return [];
   } catch {
     return { error: true, message: '無法連線至伺服器' };
   }
@@ -115,12 +160,12 @@ export default async function decorate(block) {
   displayItems.forEach((announcement) => {
     const item = document.createElement('a');
     item.className = 'news-item';
-    item.href = announcement.link || announcement.path || '#';
+    item.href = announcement.path || '#';
 
-    if (showDate === 'true' && announcement.publishDate) {
+    if (showDate === 'true' && announcement.date) {
       const dateEl = document.createElement('div');
       dateEl.className = 'news-date';
-      dateEl.textContent = formatDate(announcement.publishDate);
+      dateEl.textContent = formatDate(announcement.date);
       item.appendChild(dateEl);
     }
 
