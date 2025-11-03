@@ -37,7 +37,6 @@ function extractCfPath(el) {
 }
 
 async function fetchAnnouncements(cfPath) {
-  // Try user's query shape first (cubAnnouncementPaginated), then fallback
   const cubQuery = `
     query CubAnnouncementsByPath($path: ID!) {
       cubAnnouncementPaginated(
@@ -184,6 +183,10 @@ export default async function decorate(block) {
     showDate = 'true',
   } = data;
 
+  // Debug: log extracted cfPath
+  // eslint-disable-next-line no-console
+  console.log('[Announcement] Extracted cfPath:', cfPath);
+
   block.innerHTML = '';
 
   const container = document.createElement('div');
@@ -208,6 +211,10 @@ export default async function decorate(block) {
   }
 
   const announcements = await fetchAnnouncements(cfPath);
+
+  // Debug: log GraphQL response and announcements
+  // eslint-disable-next-line no-console
+  console.log('[Announcement] Fetched announcements:', announcements);
 
   newsList.innerHTML = '';
 
