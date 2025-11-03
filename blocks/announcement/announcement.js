@@ -54,11 +54,12 @@ async function fetchAnnouncements(cfPath) {
     const d1 = await exec(cubQuery);
     const edges = d1?.data?.cubAnnouncementPaginated?.edges;
     if (Array.isArray(edges) && edges.length) {
+      const pathKey = '_path';
       return edges
         .map((e) => e?.node)
         .filter(Boolean)
         .map((n) => ({
-          path: n.path,
+          path: (n && n[pathKey]) || n.path,
           title: n.noticeTitle,
           date: n.noticeDate,
           excerpt: n.noticeContent?.plaintext || '',
@@ -74,9 +75,10 @@ async function fetchAnnouncements(cfPath) {
     const d2 = await exec(listQuery);
     const items = d2?.data?.announcementList?.items;
     if (Array.isArray(items)) {
+      const pathKey = '_path';
       return items
         .map((n) => ({
-          path: n.path,
+          path: (n && n[pathKey]) || n.path,
           title: n.noticeTitle,
           date: n.noticeDate,
           excerpt: n.noticeContent?.plaintext || '',
@@ -108,8 +110,8 @@ export default async function decorate(block) {
       const key = el.getAttribute('data-aue-prop');
       // cfPath is an aem-content picker, usually renders an <a>
       const link = el.querySelector('a[href]');
-      if (key === 'cfPath' && link) {
-        data.cfPath = link.getAttribute('href');
+      if (key === 'cfPath') {
+        data.cfPath = (link && (link.getAttribute('href') || link.href)) || el.textContent.trim();
         return;
       }
       // numbers/booleans
