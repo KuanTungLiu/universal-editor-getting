@@ -10,7 +10,6 @@ export default function decorate(block) {
   if (props.length > 0) {
     props.forEach((el) => {
       const fullKey = el.getAttribute('data-aue-prop');
-      console.log('Processing prop:', fullKey, el);
 
       // Check for image
       const img = el.querySelector('img');
@@ -125,7 +124,7 @@ export default function decorate(block) {
   } else {
     // ====== 根據實際 HTML 結構解析 ======
     const rows = [...block.children];
-    
+
     // 根據你的 HTML 結構，依序解析每一行
     if (rows.length >= 1 && rows[0].children[0]) {
       // 第1行：title
@@ -223,7 +222,7 @@ export default function decorate(block) {
       data.subButtonLink = '#';
     }
 
-    console.log('Parsed data from simple structure:', data);
+    // parsed fallback data available in `data`
 
     // Editor mode: enhance buttons in table mode
     if (isEditor) {
@@ -243,8 +242,7 @@ export default function decorate(block) {
   }
 
   // Runtime render: build DOM from parsed data
-  console.log('Banner data parsed:', data);
-  console.log('Button count:', data.buttonCount);
+  // build banner from parsed `data`
 
   block.innerHTML = '';
 
@@ -284,7 +282,7 @@ export default function decorate(block) {
   const hasMainText = !!(data.mainButtonText || '').trim();
   const hasSubText = !!(data.subButtonText || '').trim();
 
-  console.log('Button logic:', { buttonCount, hasMainText, hasSubText });
+  // compute whether to render buttons based on provided values
 
   let shouldShowButtons = false;
   if (buttonCount === 'main-only' && hasMainText) shouldShowButtons = true;
