@@ -11,16 +11,15 @@ async function fetchAnnouncements(cfPath) {
               }]
             }
           }
-          _sort: "publishDate DESC"
+          _sort: "noticeDate DESC"
         ) {
           items {
             path: _path
-            title
-            publishDate
-            content {
+            noticeTitle
+            noticeDate
+            noticeContent {
               plaintext
             }
-            link
           }
         }
       }
