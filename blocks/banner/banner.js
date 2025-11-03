@@ -10,7 +10,6 @@ export default function decorate(block) {
   if (props.length > 0) {
     props.forEach((el) => {
       const fullKey = el.getAttribute('data-aue-prop');
-      // eslint-disable-next-line no-console
       console.log('Processing prop:', fullKey, el);
 
       // Check for image
@@ -37,7 +36,6 @@ export default function decorate(block) {
       const titleEl = block.querySelector('[data-aue-prop="title"]');
       const subtitleEl = block.querySelector('[data-aue-prop="subtitle"]');
       const imageWrapper = block.querySelector('[data-aue-prop="image"]');
-      // Support both cases: data-aue-prop on <img> itself or on a wrapper containing <img>
       let imageInWrapper = null;
       if (imageWrapper) {
         if (imageWrapper.tagName === 'IMG') {
@@ -48,18 +46,15 @@ export default function decorate(block) {
       }
       const buttonCountEl = block.querySelector('[data-aue-prop="buttonCount"]');
 
-      // Values from DOM when available for fidelity
       const titleText = titleEl ? titleEl.textContent.trim() : data.title || '';
       const subtitleHtml = subtitleEl ? subtitleEl.innerHTML : '';
       const imgSrc = imageInWrapper ? imageInWrapper.getAttribute('src') : (data.image || '');
       const buttonCountVal = buttonCountEl ? buttonCountEl.textContent.trim().toLowerCase() : (data.buttonCount || '').toLowerCase();
 
-      // Hide raw authored fields so preview doesn't duplicate
       [titleEl, subtitleEl, imageWrapper, buttonCountEl].forEach((el) => {
         if (el) el.style.display = 'none';
       });
 
-      // Build preview container similar to runtime
       const container = document.createElement('div');
       container.className = 'banner-container';
 
@@ -80,7 +75,6 @@ export default function decorate(block) {
         content.appendChild(s);
       }
 
-      // Buttons preview
       const mainTextEl = block.querySelector('[data-aue-prop="mainButtonText"]');
       const subTextEl = block.querySelector('[data-aue-prop="subButtonText"]');
       const mainLinkEl = block.querySelector('[data-aue-prop="mainButtonLink"] a');
@@ -116,7 +110,6 @@ export default function decorate(block) {
       }
       if (btnContainer.children.length > 0) content.appendChild(btnContainer);
 
-      // Image on the RIGHT in editor preview
       container.appendChild(content);
       if (imgSrc) {
         const img = document.createElement('img');
@@ -126,48 +119,122 @@ export default function decorate(block) {
         container.appendChild(img);
       }
 
-      // Append preview
       block.appendChild(container);
       return;
     }
   } else {
-    // Fallback: parse table-based rows
+    // ====== 根據實際 HTML 結構解析 ======
     const rows = [...block.children];
-    rows.forEach((row) => {
-      const cells = [...row.children];
-      if (cells.length >= 2) {
-        const key = cells[0].textContent.trim();
-        const cell = cells[1];
-        data[key] = cell.innerHTML.trim();
+    
+    // 根據你的 HTML 結構，依序解析每一行
+    if (rows.length >= 1 && rows[0].children[0]) {
+      // 第1行：title
+      const titleCell = rows[0].children[0];
+      const titleP = titleCell.querySelector('p');
+      if (titleP) {
+        data.title = titleP.textContent.trim();
+      }
+    }
 
-        // Extract link href if present
-        if (key.toLowerCase().includes('link')) {
-          const link = cell.querySelector('a[href]');
-          if (link) data[key] = link.getAttribute('href');
-        }
+    if (rows.length >= 2 && rows[1].children[0]) {
+      // 第2行：subtitle
+      const subtitleCell = rows[1].children[0];
+      const subtitleP = subtitleCell.querySelector('p');
+      if (subtitleP) {
+        data.subtitle = subtitleP.textContent.trim();
+      }
+    }
 
-        // Extract image src if present
-        if (key.toLowerCase().includes('image')) {
-          const img = cell.querySelector('img');
-          if (img && img.getAttribute('src')) data[key] = img.getAttribute('src');
+    if (rows.length >= 3 && rows[2].children[0]) {
+      // 第3行：image
+      const imageCell = rows[2].children[0];
+      const img = imageCell.querySelector('img');
+      if (img && img.getAttribute('src')) {
+        data.image = img.getAttribute('src');
+        data.imageAlt = img.getAttribute('alt') || '';
+      }
+    }
+
+    if (rows.length >= 4 && rows[3].children[0]) {
+      // 第4行：buttonCount
+      const buttonCountCell = rows[3].children[0];
+      const buttonCountP = buttonCountCell.querySelector('p');
+      if (buttonCountP) {
+        data.buttonCount = buttonCountP.textContent.trim();
+      }
+    }
+
+    if (rows.length >= 5 && rows[4].children[0]) {
+      // 第5行：mainButtonText
+      const mainTextCell = rows[4].children[0];
+      const mainTextP = mainTextCell.querySelector('p');
+      if (mainTextP) {
+        data.mainButtonText = mainTextP.textContent.trim();
+      }
+      const mainLink = mainTextCell.querySelector('a[href]');
+      if (mainLink) {
+        data.mainButtonLink = mainLink.getAttribute('href');
+        if (!data.mainButtonText) {
+          data.mainButtonText = mainLink.textContent.trim();
         }
       }
-    });
+    }
+
+    if (rows.length >= 6 && rows[5].children[0]) {
+      // 第6行：subButtonText
+      const subTextCell = rows[5].children[0];
+      const subTextP = subTextCell.querySelector('p');
+      if (subTextP) {
+        data.subButtonText = subTextP.textContent.trim();
+      }
+      const subLink = subTextCell.querySelector('a[href]');
+      if (subLink) {
+        data.subButtonLink = subLink.getAttribute('href');
+        if (!data.subButtonText) {
+          data.subButtonText = subLink.textContent.trim();
+        }
+      }
+    }
+
+    // ====== 🎯 新增：設定預設值 ======
+    // 如果 buttonCount 是空的，預設顯示兩個按鈕
+    if (!data.buttonCount) {
+      data.buttonCount = 'main-and-sub';
+    }
+
+    // 如果 subtitle 是空的，給預設文字
+    if (!data.subtitle) {
+      data.subtitle = '時時掌握交易資訊，絕不漏接重要新聞，大事小事通通報你知！';
+    }
+
+    // 如果按鈕文字是空的，給預設文字
+    if (!data.mainButtonText) {
+      data.mainButtonText = '重要公告';
+    }
+    if (!data.subButtonText) {
+      data.subButtonText = '新聞直播';
+    }
+
+    // 如果按鈕連結是空的，給預設連結
+    if (!data.mainButtonLink) {
+      data.mainButtonLink = '#';
+    }
+    if (!data.subButtonLink) {
+      data.subButtonLink = '#';
+    }
+
+    console.log('Parsed data from simple structure:', data);
 
     // Editor mode: enhance buttons in table mode
     if (isEditor) {
       rows.forEach((row) => {
         if (!row.children[0]) return;
-        const key = row.children[0].textContent.trim().toLowerCase();
-        if (key.includes('buttontext') && row.children[1]) {
-          const text = row.children[1].textContent.trim();
-          if (text) {
-            const btn = document.createElement('button');
-            btn.className = 'button primary';
-            btn.type = 'button';
-            btn.textContent = text;
-            row.children[1].innerHTML = '';
-            row.children[1].appendChild(btn);
+        const cell = row.children[0];
+        const p = cell.querySelector('p');
+        if (p) {
+          const text = p.textContent.trim().toLowerCase();
+          if (text.includes('button') || text === 'main-and-sub' || text === 'main-only') {
+            // 這可能是按鈕相關的內容，保持原樣
           }
         }
       });
@@ -176,10 +243,7 @@ export default function decorate(block) {
   }
 
   // Runtime render: build DOM from parsed data
-  // DEBUG: Log parsed data
-  // eslint-disable-next-line no-console
   console.log('Banner data parsed:', data);
-  // eslint-disable-next-line no-console
   console.log('Button count:', data.buttonCount);
 
   block.innerHTML = '';
@@ -190,7 +254,7 @@ export default function decorate(block) {
   const content = document.createElement('div');
   content.className = 'banner-content';
 
-  // Prepare image (append after content so it appears on the right in flex row)
+  // Prepare image
   let imgEl;
   if (data.image) {
     imgEl = document.createElement('img');
@@ -211,7 +275,7 @@ export default function decorate(block) {
   if (data.subtitle) {
     const subtitleEl = document.createElement('div');
     subtitleEl.className = 'banner-subtitle';
-    subtitleEl.innerHTML = data.subtitle;
+    subtitleEl.textContent = norm(data.subtitle);
     content.appendChild(subtitleEl);
   }
 
@@ -220,7 +284,6 @@ export default function decorate(block) {
   const hasMainText = !!(data.mainButtonText || '').trim();
   const hasSubText = !!(data.subButtonText || '').trim();
 
-  // eslint-disable-next-line no-console
   console.log('Button logic:', { buttonCount, hasMainText, hasSubText });
 
   let shouldShowButtons = false;
@@ -236,14 +299,14 @@ export default function decorate(block) {
     const createBtn = (text, link, type = 'primary') => {
       const t = norm(text);
       const l = norm(link);
-      if (!t || !l) return null;
+      if (!t) return null;
 
       const wrapper = document.createElement('div');
       wrapper.className = 'button-wrapper';
 
       const a = document.createElement('a');
       a.className = `button ${type}`;
-      a.href = l;
+      a.href = l || '#';
       a.textContent = t;
       wrapper.appendChild(a);
       return wrapper;
