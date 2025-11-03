@@ -1,3 +1,41 @@
+function extractCfPath(el) {
+  if (!el) return '';
+  // Prefer anchor href
+  const link = el.querySelector && el.querySelector('a');
+  const candidates = [];
+  if (link) {
+    candidates.push(link.getAttribute('href'));
+    candidates.push(link.href);
+    if (link.dataset) candidates.push(link.dataset.value, link.dataset.href);
+    candidates.push(link.getAttribute('data-value'));
+    candidates.push(link.getAttribute('data-href'));
+    candidates.push(link.textContent && link.textContent.trim());
+  }
+  // Also check attributes on the container element
+  if (el.dataset) candidates.push(el.dataset.value, el.dataset.href);
+  candidates.push(el.getAttribute && el.getAttribute('data-value'));
+  candidates.push(el.getAttribute && el.getAttribute('data-href'));
+  candidates.push(el.textContent && el.textContent.trim());
+
+  // Normalize and pick the first that contains a DAM/content-like path
+  const normalized = candidates
+    .filter(Boolean)
+    .map((v) => v.toString().trim());
+
+  // If any candidate already looks like a full content path, use it
+  const direct = normalized.find((v) => v.startsWith('/content/'));
+  if (direct) return direct;
+
+  // Try to extract substring containing /content/ from any candidate
+  for (let i = 0; i < normalized.length; i += 1) {
+    const v = normalized[i];
+    const idx = v.indexOf('/content/');
+    if (idx !== -1) return v.slice(idx).split(/[\s"']+/)[0];
+  }
+
+  return '';
+}
+
 async function fetchAnnouncements(cfPath) {
   // Try user's query shape first (cubAnnouncementPaginated), then fallback
   const cubQuery = `
@@ -109,9 +147,8 @@ export default async function decorate(block) {
     props.forEach((el) => {
       const key = el.getAttribute('data-aue-prop');
       // cfPath is an aem-content picker, usually renders an <a>
-      const link = el.querySelector('a[href]');
       if (key === 'cfPath') {
-        data.cfPath = (link && (link.getAttribute('href') || link.href)) || el.textContent.trim();
+        data.cfPath = extractCfPath(el);
         return;
       }
       // numbers/booleans
