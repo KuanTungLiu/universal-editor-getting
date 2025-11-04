@@ -281,9 +281,33 @@ async function fetchAnnouncements(cfPath) {
         const hasTitle = !!item.title;
         if (!hasTitle) {
           console.log('  ⚠️ 過濾掉沒有標題的項目:', item);
+          return false;
         }
-        return hasTitle;
-      }) // Only keep items with titles
+
+        // Filter out future announcements (only show published ones)
+        if (item.date) {
+          const noticeDate = new Date(item.date);
+          const now = new Date();
+          // Remove time component for fair comparison
+          const noticeDateOnly = new Date(
+            noticeDate.getFullYear(),
+            noticeDate.getMonth(),
+            noticeDate.getDate(),
+          );
+          const todayOnly = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+          );
+
+          if (noticeDateOnly > todayOnly) {
+            console.log(`  ⏭️ 過濾掉未來日期的公告: ${item.title} (${item.date})`);
+            return false;
+          }
+        }
+
+        return true;
+      }) // Only keep items with titles and published dates
       .sort((a, b) => {
         // Sort by date descending (newest first)
         const dateA = new Date(a.date || 0);
