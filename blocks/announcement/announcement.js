@@ -190,13 +190,49 @@ export default async function decorate(block) {
       if (key === 'title') data.title = txt;
     });
   } else {
-    console.log('⚠️ 沒有 data-aue-prop，使用 table 模式');
+    console.log('⚠️ 沒有 data-aue-prop，使用 fallback 模式');
+
+    // Try to find any links or content in the block
+    const allLinks = block.querySelectorAll('a[href]');
+    console.log('🔗 找到', allLinks.length, '個連結');
+    allLinks.forEach((link, i) => {
+      console.log(`  Link ${i}:`, link.href, link.textContent);
+      if (!data.cfPath && link.href && link.href.includes('/content/')) {
+        data.cfPath = extractCfPath(link);
+        console.log('  ✅ 從連結提取 cfPath:', data.cfPath);
+      }
+    });
+
+    // Also check all text content
+    const allText = block.textContent;
+    console.log('📝 Block 文字內容:', allText);
+    if (!data.cfPath && allText.includes('/content/')) {
+      const match = allText.match(/\/content\/[^\s"'<>]+/);
+      if (match) {
+        const matchedPath = match[0];
+        data.cfPath = matchedPath;
+        console.log('  ✅ 從文字提取 cfPath:', data.cfPath);
+      }
+    }
+
     const rows = [...block.children];
     console.log('📋 找到', rows.length, '個 rows');
     rows.forEach((row, i) => {
       console.log(`  Row ${i}:`, row);
       const cells = [...row.children];
       console.log(`    Cells (${cells.length}):`, cells);
+
+      // Try to extract from single cell if available
+      if (cells.length === 1) {
+        const cell = cells[0];
+        console.log('    Single cell HTML:', cell.innerHTML);
+        const cellLinks = cell.querySelectorAll('a[href]');
+        if (cellLinks.length > 0 && !data.cfPath) {
+          data.cfPath = extractCfPath(cellLinks[0]);
+          console.log('    ✅ 從 cell 連結提取 cfPath:', data.cfPath);
+        }
+      }
+
       if (cells.length >= 2) {
         const key = cells[0].textContent.trim();
         const valueCell = cells[1];
