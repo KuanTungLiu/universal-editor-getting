@@ -34,118 +34,131 @@ function extractCfPath(el) {
 async function fetchAnnouncements(cfPath) {
   console.log('🔍 開始 fetch，路徑:', cfPath);
 
-  const cubQuery = `
-    query CubAnnouncementsByPath($path: ID!) {
-      cubAnnouncementPaginated(
-        filter: {
-          _path: {
-            _expressions: [{ value: $path _operator: STARTS_WITH }]
-          }
+  try {
+    // Use AEM's .json API to fetch folder contents
+    // Decode URL-encoded path for display
+    const decodedPath = decodeURIComponent(cfPath);
+    console.log('📂 解碼後路徑:', decodedPath);
+
+    // Try different API endpoints
+    const endpoints = [
+      `${cfPath}.json`,
+      `${cfPath}.1.json`,
+      `${decodedPath}.json`,
+    ];
+
+    let data = null;
+    let successUrl = null;
+
+    // Try each endpoint
+    for (let i = 0; i < endpoints.length; i += 1) {
+      const url = endpoints[i];
+      console.log(`🌐 嘗試端點 ${i + 1}:`, url);
+
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const res = await fetch(url);
+        console.log('  ↪️ 狀態:', res.status);
+
+        if (res.ok) {
+          // eslint-disable-next-line no-await-in-loop
+          data = await res.json();
+          successUrl = url;
+          console.log('  ✅ 成功！資料:', data);
+          break;
         }
-        sort: "noticeDate DESC"
-      ) {
-        edges {
-          node {
-            _path
-            noticeTitle
-            noticeDate
-            noticeContent { plaintext html }
-          }
-        }
+      } catch (err) {
+        console.log('  ⚠️ 失敗:', err.message);
       }
     }
-  `;
 
-  const listQuery = `
-    query AnnouncementsByPath($path: ID!) {
-      announcementList(
-        filter: {
-          _path: { _expressions: [{ value: $path _operator: STARTS_WITH }] }
-        }
-        _sort: "noticeDate DESC"
-      ) {
-        items {
-          _path
-          noticeTitle
-          noticeDate
-          noticeContent { plaintext }
-        }
+    if (!data) {
+      console.error('❌ 所有端點都失敗');
+      return { error: true, message: '無法讀取公告資料夾' };
+    }
+
+    console.log('🎉 成功從', successUrl, '取得資料');
+
+    // Parse children/items from the response
+    let items = [];
+
+    // AEM can return data in different formats
+    if (Array.isArray(data)) {
+      items = data;
+      console.log('📋 資料是陣列，長度:', items.length);
+    } else if (data && typeof data === 'object') {
+      // Try common property names
+      const childrenKey = Object.keys(data).find((key) => key === 'children' || key === 'items' || key === ':items');
+
+      if (childrenKey && Array.isArray(data[childrenKey])) {
+        items = data[childrenKey];
+        console.log(`📋 從 ${childrenKey} 取得項目，長度:`, items.length);
+      } else {
+        // Maybe the data object itself contains the fragment properties
+        console.log('� 將整個物件視為單一項目');
+        items = [data];
       }
     }
-  `;
 
-  const exec = async (query) => {
-    console.log('📤 發送請求:', {
-      url: '/graphql/execute.json',
-      variables: { path: cfPath },
-    });
+    console.log('🔍 總共找到', items.length, '個項目');
 
-    const res = await fetch('/graphql/execute.json', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { path: cfPath } }),
-    });
+    // Filter and map to announcement format
+    const announcements = items
+      .filter((item) => item && typeof item === 'object')
+      .map((item) => {
+        console.log('  處理項目:', item);
 
-    console.log('📥 回應狀態:', res.status, res.statusText);
+        // Try different property name conventions
+        const pathKey = 'jcr:path';
+        const titleKey = 'jcr:title';
+        const createdKey = 'jcr:created';
+        const modifiedKey = 'jcr:lastModified';
+        const undscorePath = '_path';
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error('❌ 請求失敗:', text);
-      throw new Error('network');
-    }
+        const title = item[titleKey]
+          || item.title
+          || item.noticeTitle
+          || item.name
+          || item['jcr:name']
+          || '';
 
-    const json = await res.json();
-    console.log('📊 回應資料:', json);
-    return json;
-  };
+        const date = item.noticeDate
+          || item.date
+          || item[modifiedKey]
+          || item[createdKey]
+          || item.published
+          || '';
 
-  try {
-    console.log('🎯 嘗試 cubAnnouncementPaginated...');
-    const d1 = await exec(cubQuery);
-    const edges = d1?.data?.cubAnnouncementPaginated?.edges;
-    console.log('📋 edges:', edges);
+        const excerpt = item.excerpt
+          || item.noticeContent?.plaintext
+          || item.description
+          || item['jcr:description']
+          || '';
 
-    if (Array.isArray(edges) && edges.length) {
-      console.log('✅ 成功！找到', edges.length, '筆資料');
-      const pathKey = '_path';
-      return edges
-        .map((e) => e?.node)
-        .filter(Boolean)
-        .map((n) => ({
-          path: (n && n[pathKey]) || n.path,
-          title: n.noticeTitle,
-          date: n.noticeDate,
-          excerpt: n.noticeContent?.plaintext || '',
-        }))
-        .sort((a, b) => new Date(b.date) - new Date(a.date));
-    }
-    console.log('⚠️ cubAnnouncementPaginated 沒有資料，嘗試 fallback...');
+        const path = item[pathKey]
+          || item.path
+          || item[undscorePath]
+          || `${cfPath}/${item.name || item['jcr:name'] || ''}`;
+
+        return {
+          path,
+          title: title.toString().trim(),
+          date: date.toString().trim(),
+          excerpt: excerpt.toString().trim(),
+        };
+      })
+      .filter((item) => item.title) // Only keep items with titles
+      .sort((a, b) => {
+        // Sort by date descending (newest first)
+        const dateA = new Date(a.date || 0);
+        const dateB = new Date(b.date || 0);
+        return dateB - dateA;
+      });
+
+    console.log('✅ 解析出', announcements.length, '個公告:', announcements);
+    return announcements;
   } catch (err) {
-    console.error('❌ cubAnnouncementPaginated 失敗:', err);
-  }
-
-  try {
-    console.log('🎯 嘗試 announcementList...');
-    const d2 = await exec(listQuery);
-    const items = d2?.data?.announcementList?.items;
-    console.log('📋 items:', items);
-
-    if (Array.isArray(items)) {
-      console.log('✅ 成功！找到', items.length, '筆資料');
-      const pathKey = '_path';
-      return items
-        .map((n) => ({
-          path: (n && n[pathKey]) || n.path,
-          title: n.noticeTitle,
-          date: n.noticeDate,
-          excerpt: n.noticeContent?.plaintext || '',
-        }))
-        .sort((a, b) => new Date(b.date) - new Date(a.date));
-    }
-    console.log('⚠️ announcementList 沒有資料');
-    return [];
-  } catch (err) {
-    console.error('❌ announcementList 失敗:', err);
+    console.error('❌ fetchAnnouncements 錯誤:', err);
     return { error: true, message: '無法連線至伺服器' };
   }
 }
