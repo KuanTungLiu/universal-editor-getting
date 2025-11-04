@@ -33,7 +33,7 @@ function extractCfPath(el) {
 
 async function fetchAnnouncements(cfPath) {
   console.log('🔍 開始 fetch，路徑:', cfPath);
-  
+
   const cubQuery = `
     query CubAnnouncementsByPath($path: ID!) {
       cubAnnouncementPaginated(
@@ -77,23 +77,23 @@ async function fetchAnnouncements(cfPath) {
   const exec = async (query) => {
     console.log('📤 發送請求:', {
       url: '/graphql/execute.json',
-      variables: { path: cfPath }
+      variables: { path: cfPath },
     });
-    
+
     const res = await fetch('/graphql/execute.json', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query, variables: { path: cfPath } }),
     });
-    
+
     console.log('📥 回應狀態:', res.status, res.statusText);
-    
+
     if (!res.ok) {
       const text = await res.text();
       console.error('❌ 請求失敗:', text);
       throw new Error('network');
     }
-    
+
     const json = await res.json();
     console.log('📊 回應資料:', json);
     return json;
@@ -104,7 +104,7 @@ async function fetchAnnouncements(cfPath) {
     const d1 = await exec(cubQuery);
     const edges = d1?.data?.cubAnnouncementPaginated?.edges;
     console.log('📋 edges:', edges);
-    
+
     if (Array.isArray(edges) && edges.length) {
       console.log('✅ 成功！找到', edges.length, '筆資料');
       const pathKey = '_path';
@@ -129,7 +129,7 @@ async function fetchAnnouncements(cfPath) {
     const d2 = await exec(listQuery);
     const items = d2?.data?.announcementList?.items;
     console.log('📋 items:', items);
-    
+
     if (Array.isArray(items)) {
       console.log('✅ 成功！找到', items.length, '筆資料');
       const pathKey = '_path';
@@ -162,17 +162,17 @@ function formatDate(dateString) {
 export default async function decorate(block) {
   console.log('=== News Block 開始 ===');
   console.log('📦 Block:', block);
-  
+
   const data = {};
 
   const props = block.querySelectorAll('[data-aue-prop]');
   console.log('🔍 找到', props.length, '個 data-aue-prop');
-  
+
   if (props.length > 0) {
     props.forEach((el) => {
       const key = el.getAttribute('data-aue-prop');
       console.log('  -', key, ':', el);
-      
+
       if (key === 'cfPath') {
         data.cfPath = extractCfPath(el);
         console.log('    📂 解析出的路徑:', data.cfPath);
@@ -275,6 +275,6 @@ export default async function decorate(block) {
 
     newsList.appendChild(item);
   });
-  
+
   console.log('=== News Block 完成 ===');
 }
