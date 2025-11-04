@@ -78,6 +78,7 @@ async function fetchAnnouncements(cfPath) {
     }
 
     console.log('🎉 成功從', successUrl, '取得資料');
+    console.log('🔑 資料的所有 keys:', Object.keys(data));
 
     // Parse children/items from the response
     let items = [];
@@ -87,15 +88,53 @@ async function fetchAnnouncements(cfPath) {
       items = data;
       console.log('📋 資料是陣列，長度:', items.length);
     } else if (data && typeof data === 'object') {
-      // Try common property names
-      const childrenKey = Object.keys(data).find((key) => key === 'children' || key === 'items' || key === ':items');
+      // Log all keys to see what's available
+      const allKeys = Object.keys(data);
+      console.log('🔍 檢查這些 keys:', allKeys);
 
-      if (childrenKey && Array.isArray(data[childrenKey])) {
-        items = data[childrenKey];
-        console.log(`📋 從 ${childrenKey} 取得項目，長度:`, items.length);
-      } else {
-        // Maybe the data object itself contains the fragment properties
-        console.log('� 將整個物件視為單一項目');
+      // Try to find children in various possible keys
+      const possibleChildKeys = [
+        ':children',
+        'children',
+        ':items',
+        'items',
+        'content',
+        ':content',
+      ];
+
+      let foundKey = null;
+      for (let i = 0; i < possibleChildKeys.length; i += 1) {
+        const key = possibleChildKeys[i];
+        if (data[key]) {
+          console.log(`  ✓ 找到 key: ${key}, 類型:`, typeof data[key]);
+          if (Array.isArray(data[key])) {
+            foundKey = key;
+            items = data[key];
+            console.log(`📋 從 ${key} 取得項目，長度:`, items.length);
+            break;
+          } else if (typeof data[key] === 'object') {
+            // Maybe it's nested deeper
+            const nestedKeys = Object.keys(data[key]);
+            console.log(`  ${key} 是物件，它的 keys:`, nestedKeys);
+            // Check if any nested key contains an array
+            for (let j = 0; j < nestedKeys.length; j += 1) {
+              const nestedKey = nestedKeys[j];
+              if (Array.isArray(data[key][nestedKey])) {
+                items = data[key][nestedKey];
+                console.log(`📋 從 ${key}.${nestedKey} 取得項目，長度:`, items.length);
+                foundKey = `${key}.${nestedKey}`;
+                break;
+              }
+            }
+            if (foundKey) break;
+          }
+        }
+      }
+
+      if (!foundKey) {
+        // Fallback: treat the whole object as single item
+        console.log('⚠️ 沒找到子項目，將整個物件視為單一項目');
+        console.log('📋 完整資料結構:', JSON.stringify(data, null, 2));
         items = [data];
       }
     }
