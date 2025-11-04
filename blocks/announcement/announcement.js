@@ -181,6 +181,9 @@ async function fetchAnnouncements(cfPath) {
       .filter((item) => item && typeof item === 'object')
       .map((item) => {
         console.log('  處理項目:', item);
+        console.log('    項目的 keys:', Object.keys(item));
+        const nodeName = item._name || ''; // eslint-disable-line no-underscore-dangle
+        console.log('    _name:', nodeName);
 
         // Try different property name conventions
         const pathKey = 'jcr:path';
@@ -194,6 +197,7 @@ async function fetchAnnouncements(cfPath) {
           || item.noticeTitle
           || item.name
           || item['jcr:name']
+          || nodeName // Use the node name we added
           || '';
 
         const date = item.noticeDate
@@ -212,7 +216,9 @@ async function fetchAnnouncements(cfPath) {
         const path = item[pathKey]
           || item.path
           || item[undscorePath]
-          || `${cfPath}/${item.name || item['jcr:name'] || ''}`;
+          || `${cfPath}/${item.name || item['jcr:name'] || nodeName || ''}`;
+
+        console.log('    -> title:', title, ', date:', date, ', path:', path);
 
         return {
           path,
@@ -221,7 +227,13 @@ async function fetchAnnouncements(cfPath) {
           excerpt: excerpt.toString().trim(),
         };
       })
-      .filter((item) => item.title) // Only keep items with titles
+      .filter((item) => {
+        const hasTitle = !!item.title;
+        if (!hasTitle) {
+          console.log('  ⚠️ 過濾掉沒有標題的項目:', item);
+        }
+        return hasTitle;
+      }) // Only keep items with titles
       .sort((a, b) => {
         // Sort by date descending (newest first)
         const dateA = new Date(a.date || 0);
