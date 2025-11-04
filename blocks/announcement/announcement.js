@@ -41,16 +41,15 @@ async function fetchAnnouncements(cfPath) {
     console.log('📂 解碼後路徑:', decodedPath);
 
     // Try different API endpoints with varying depth and selectors
-    // - .1.json = depth 1 (includes immediate children)
+    // - .infinity.json = all descendants (needed for CF data.master)
     // - .2.json = depth 2 (includes children and their children)
-    // - .infinity.json = all descendants (use with caution)
-    // - .children.json = special selector for children
+    // - .1.json = depth 1 (includes immediate children)
     const endpoints = [
-      `${cfPath}.2.json`, // depth 2 (best for Content Fragments)
+      `${cfPath}.infinity.json`, // all levels (needed for CF data)
+      `${decodedPath}.infinity.json`, // decoded path, all levels
+      `${cfPath}.2.json`, // depth 2
       `${cfPath}.1.json`, // depth 1
-      `${cfPath}.infinity.json`, // all levels (may be slow)
       `${decodedPath}.2.json`, // decoded path, depth 2
-      `${decodedPath}.1.json`, // decoded path, depth 1
       `${cfPath}.json`, // default (no children)
     ];
 
@@ -194,6 +193,14 @@ async function fetchAnnouncements(cfPath) {
         if (jcrContent) {
           console.log('    jcr:content keys:', Object.keys(jcrContent));
 
+          // Check contentFragment property
+          if (jcrContent.contentFragment) {
+            console.log('    contentFragment:', jcrContent.contentFragment);
+            if (typeof jcrContent.contentFragment === 'object') {
+              console.log('    contentFragment keys:', Object.keys(jcrContent.contentFragment));
+            }
+          }
+
           // Try data.master first (most common for CF)
           if (jcrContent.data) {
             console.log('    jcr:content.data exists, keys:', Object.keys(jcrContent.data));
@@ -208,15 +215,14 @@ async function fetchAnnouncements(cfPath) {
             // Fallback to jcr:content itself
             cfData = jcrContent;
             console.log('    ⚠️ data 不存在，使用 jcr:content');
+            console.log('    ⚠️ 可能需要更高的深度參數才能取得 CF 資料');
           }
         }
 
         console.log('    CF data:', cfData);
         if (cfData) {
           console.log('    CF data keys:', Object.keys(cfData));
-        }
-
-        // Try different property name conventions
+        } // Try different property name conventions
         const pathKey = 'jcr:path';
         const titleKey = 'jcr:title';
         const createdKey = 'jcr:created';
