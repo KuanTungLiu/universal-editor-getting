@@ -185,6 +185,16 @@ async function fetchAnnouncements(cfPath) {
         const nodeName = item._name || ''; // eslint-disable-line no-underscore-dangle
         console.log('    _name:', nodeName);
 
+        // Content Fragment data is often nested in jcr:content/data/master
+        const jcrContent = item['jcr:content'];
+        const cfData = jcrContent?.data?.master || jcrContent?.data || jcrContent;
+
+        console.log('    jcr:content:', jcrContent);
+        console.log('    CF data:', cfData);
+        if (cfData) {
+          console.log('    CF data keys:', Object.keys(cfData));
+        }
+
         // Try different property name conventions
         const pathKey = 'jcr:path';
         const titleKey = 'jcr:title';
@@ -192,7 +202,11 @@ async function fetchAnnouncements(cfPath) {
         const modifiedKey = 'jcr:lastModified';
         const undscorePath = '_path';
 
-        const title = item[titleKey]
+        // Try to get title from CF data first, then fallback to item properties
+        const title = cfData?.noticeTitle
+          || cfData?.title
+          || cfData?.[titleKey]
+          || item[titleKey]
           || item.title
           || item.noticeTitle
           || item.name
@@ -200,14 +214,23 @@ async function fetchAnnouncements(cfPath) {
           || nodeName // Use the node name we added
           || '';
 
-        const date = item.noticeDate
+        // Try to get date from CF data first
+        const date = cfData?.noticeDate
+          || cfData?.date
+          || cfData?.published
+          || item.noticeDate
           || item.date
           || item[modifiedKey]
           || item[createdKey]
           || item.published
           || '';
 
-        const excerpt = item.excerpt
+        // Try to get excerpt from CF data
+        const excerpt = cfData?.noticeContent?.plaintext
+          || cfData?.noticeContent
+          || cfData?.excerpt
+          || cfData?.description
+          || item.excerpt
           || item.noticeContent?.plaintext
           || item.description
           || item['jcr:description']
