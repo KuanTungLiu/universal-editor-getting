@@ -40,11 +40,18 @@ async function fetchAnnouncements(cfPath) {
     const decodedPath = decodeURIComponent(cfPath);
     console.log('📂 解碼後路徑:', decodedPath);
 
-    // Try different API endpoints
+    // Try different API endpoints with varying depth and selectors
+    // - .1.json = depth 1 (includes immediate children)
+    // - .2.json = depth 2 (includes children and their children)
+    // - .infinity.json = all descendants (use with caution)
+    // - .children.json = special selector for children
     const endpoints = [
-      `${cfPath}.json`,
-      `${cfPath}.1.json`,
-      `${decodedPath}.json`,
+      `${cfPath}.2.json`, // depth 2 (best for Content Fragments)
+      `${cfPath}.1.json`, // depth 1
+      `${cfPath}.infinity.json`, // all levels (may be slow)
+      `${decodedPath}.2.json`, // decoded path, depth 2
+      `${decodedPath}.1.json`, // decoded path, depth 1
+      `${cfPath}.json`, // default (no children)
     ];
 
     let data = null;
@@ -132,10 +139,38 @@ async function fetchAnnouncements(cfPath) {
       }
 
       if (!foundKey) {
-        // Fallback: treat the whole object as single item
-        console.log('⚠️ 沒找到子項目，將整個物件視為單一項目');
-        console.log('📋 完整資料結構:', JSON.stringify(data, null, 2));
-        items = [data];
+        // When using depth parameters (.1.json, .2.json), AEM returns child nodes
+        // as direct properties of the parent object (not in a "children" array)
+        // Filter for properties that look like content fragments
+        // (exclude jcr: and sling: properties)
+        console.log('⚠️ 沒找到標準的子項目 key');
+        console.log('🔍 嘗試從物件屬性中提取子節點...');
+
+        const childNodes = [];
+        allKeys.forEach((key) => {
+          // Skip JCR/Sling system properties
+          if (key.startsWith('jcr:') || key.startsWith('sling:') || key.startsWith('rep:')) {
+            console.log(`  ⏭️ 跳過系統屬性: ${key}`);
+            return;
+          }
+
+          const value = data[key];
+          if (value && typeof value === 'object' && !Array.isArray(value)) {
+            console.log(`  ✓ 找到可能的子節點: ${key}`, value);
+            // Add the key as a property so we can track it
+            childNodes.push({ ...value, _name: key });
+          }
+        });
+
+        if (childNodes.length > 0) {
+          items = childNodes;
+          console.log(`📋 從物件屬性中提取出 ${childNodes.length} 個子節點`);
+        } else {
+          // Last resort: treat the whole object as single item
+          console.log('⚠️ 完全沒找到子項目，將整個物件視為單一項目');
+          console.log('📋 完整資料結構:', JSON.stringify(data, null, 2));
+          items = [data];
+        }
       }
     }
 
