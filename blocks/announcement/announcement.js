@@ -1,6 +1,5 @@
 function extractCfPath(el) {
   if (!el) return '';
-  // Prefer anchor href
   const link = el.querySelector && el.querySelector('a');
   const candidates = [];
   if (link) {
@@ -11,22 +10,18 @@ function extractCfPath(el) {
     candidates.push(link.getAttribute('data-href'));
     candidates.push(link.textContent && link.textContent.trim());
   }
-  // Also check attributes on the container element
   if (el.dataset) candidates.push(el.dataset.value, el.dataset.href);
   candidates.push(el.getAttribute && el.getAttribute('data-value'));
   candidates.push(el.getAttribute && el.getAttribute('data-href'));
   candidates.push(el.textContent && el.textContent.trim());
 
-  // Normalize and pick the first that contains a DAM/content-like path
   const normalized = candidates
     .filter(Boolean)
     .map((v) => v.toString().trim());
 
-  // If any candidate already looks like a full content path, use it
   const direct = normalized.find((v) => v.startsWith('/content/'));
   if (direct) return direct;
 
-  // Try to extract substring containing /content/ from any candidate
   for (let i = 0; i < normalized.length; i += 1) {
     const v = normalized[i];
     const idx = v.indexOf('/content/');
@@ -37,72 +32,120 @@ function extractCfPath(el) {
 }
 
 async function fetchAnnouncements(cfPath) {
-  try {
-    // Query: list all content fragments in the folder path
-    // cfPath example: /content/dam/ktliu-testing/公告
-    // Use AEM JCR API to fetch content fragments
-    const searchUrl = `${cfPath}.json?limit=1000`;
+  console.log('🔍 開始 fetch，路徑:', cfPath);
+  
+  const cubQuery = `
+    query CubAnnouncementsByPath($path: ID!) {
+      cubAnnouncementPaginated(
+        filter: {
+          _path: {
+            _expressions: [{ value: $path _operator: STARTS_WITH }]
+          }
+        }
+        sort: "noticeDate DESC"
+      ) {
+        edges {
+          node {
+            _path
+            noticeTitle
+            noticeDate
+            noticeContent { plaintext html }
+          }
+        }
+      }
+    }
+  `;
 
-    // eslint-disable-next-line no-console
-    console.log('[Announcement] Fetching from:', searchUrl);
+  const listQuery = `
+    query AnnouncementsByPath($path: ID!) {
+      announcementList(
+        filter: {
+          _path: { _expressions: [{ value: $path _operator: STARTS_WITH }] }
+        }
+        _sort: "noticeDate DESC"
+      ) {
+        items {
+          _path
+          noticeTitle
+          noticeDate
+          noticeContent { plaintext }
+        }
+      }
+    }
+  `;
 
-    const res = await fetch(searchUrl);
+  const exec = async (query) => {
+    console.log('📤 發送請求:', {
+      url: '/graphql/execute.json',
+      variables: { path: cfPath }
+    });
+    
+    const res = await fetch('/graphql/execute.json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables: { path: cfPath } }),
+    });
+    
+    console.log('📥 回應狀態:', res.status, res.statusText);
+    
     if (!res.ok) {
-      // eslint-disable-next-line no-console
-      console.error('[Announcement] Fetch failed with status:', res.status);
-      return { error: true, message: '無法讀取公告資料夾' };
+      const text = await res.text();
+      console.error('❌ 請求失敗:', text);
+      throw new Error('network');
     }
+    
+    const json = await res.json();
+    console.log('📊 回應資料:', json);
+    return json;
+  };
 
-    const data = await res.json();
-    // eslint-disable-next-line no-console
-    console.log('[Announcement] Raw response:', data);
-
-    // Parse the response - AEM returns children in various formats
-    // Try direct children array first
-    let items = [];
-    if (Array.isArray(data)) {
-      items = data;
-    } else if (data.children && Array.isArray(data.children)) {
-      items = data.children;
-    } else if (data.items && Array.isArray(data.items)) {
-      items = data.items;
+  try {
+    console.log('🎯 嘗試 cubAnnouncementPaginated...');
+    const d1 = await exec(cubQuery);
+    const edges = d1?.data?.cubAnnouncementPaginated?.edges;
+    console.log('📋 edges:', edges);
+    
+    if (Array.isArray(edges) && edges.length) {
+      console.log('✅ 成功！找到', edges.length, '筆資料');
+      const pathKey = '_path';
+      return edges
+        .map((e) => e?.node)
+        .filter(Boolean)
+        .map((n) => ({
+          path: (n && n[pathKey]) || n.path,
+          title: n.noticeTitle,
+          date: n.noticeDate,
+          excerpt: n.noticeContent?.plaintext || '',
+        }))
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
     }
-
-    // Filter and map to standardized format
-    const announcements = items
-      .filter((item) => item && typeof item === 'object')
-      .map((item) => {
-        // Try various possible property names
-        const pathKey = 'jcr:path';
-        const titleKey = 'jcr:title';
-        const createdKey = 'jcr:created';
-        const undscorePath = '_path'; // avoid no-underscore-dangle
-        const title = item[titleKey] || item.title || item.noticeTitle || item.name || '';
-        const date = item[createdKey] || item.date || item.noticeDate || item.modified || '';
-        const excerpt = item.excerpt || item.noticeContent?.plaintext || item.description || '';
-
-        return {
-          path: item[pathKey] || item.path || item[undscorePath] || cfPath,
-          title: title.toString().trim(),
-          date: date.toString().trim(),
-          excerpt: excerpt.toString().trim(),
-        };
-      })
-      .filter((item) => item.title) // Keep only items with title
-      .sort((a, b) => {
-        // Sort by date descending (newest first)
-        const dateA = new Date(a.date || 0);
-        const dateB = new Date(b.date || 0);
-        return dateB - dateA;
-      });
-
-    // eslint-disable-next-line no-console
-    console.log('[Announcement] Parsed announcements:', announcements);
-
-    return announcements;
+    console.log('⚠️ cubAnnouncementPaginated 沒有資料，嘗試 fallback...');
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('[Announcement] Error fetching:', err);
+    console.error('❌ cubAnnouncementPaginated 失敗:', err);
+  }
+
+  try {
+    console.log('🎯 嘗試 announcementList...');
+    const d2 = await exec(listQuery);
+    const items = d2?.data?.announcementList?.items;
+    console.log('📋 items:', items);
+    
+    if (Array.isArray(items)) {
+      console.log('✅ 成功！找到', items.length, '筆資料');
+      const pathKey = '_path';
+      return items
+        .map((n) => ({
+          path: (n && n[pathKey]) || n.path,
+          title: n.noticeTitle,
+          date: n.noticeDate,
+          excerpt: n.noticeContent?.plaintext || '',
+        }))
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+    console.log('⚠️ announcementList 沒有資料');
+    return [];
+  } catch (err) {
+    console.error('❌ announcementList 失敗:', err);
     return { error: true, message: '無法連線至伺服器' };
   }
 }
@@ -117,19 +160,24 @@ function formatDate(dateString) {
 }
 
 export default async function decorate(block) {
+  console.log('=== News Block 開始 ===');
+  console.log('📦 Block:', block);
+  
   const data = {};
 
-  // Prefer Universal Editor authord data via data-aue-prop
   const props = block.querySelectorAll('[data-aue-prop]');
+  console.log('🔍 找到', props.length, '個 data-aue-prop');
+  
   if (props.length > 0) {
     props.forEach((el) => {
       const key = el.getAttribute('data-aue-prop');
-      // cfPath is an aem-content picker, usually renders an <a>
+      console.log('  -', key, ':', el);
+      
       if (key === 'cfPath') {
         data.cfPath = extractCfPath(el);
+        console.log('    📂 解析出的路徑:', data.cfPath);
         return;
       }
-      // numbers/booleans
       const txt = el.textContent.trim();
       if (key === 'maxItems') {
         data.maxItems = txt || '10';
@@ -139,21 +187,23 @@ export default async function decorate(block) {
         data.showDate = (txt || 'true');
         return;
       }
-      // optional title if present in authored content
       if (key === 'title') data.title = txt;
     });
   } else {
-    // Fallback: parse table-like authored content (two-column rows)
+    console.log('⚠️ 沒有 data-aue-prop，使用 table 模式');
     const rows = [...block.children];
     rows.forEach((row) => {
       const cells = [...row.children];
       if (cells.length >= 2) {
         const key = cells[0].textContent.trim();
         const value = cells[1].textContent.trim();
+        console.log('  -', key, ':', value);
         data[key] = value;
       }
     });
   }
+
+  console.log('📊 解析後的 data:', data);
 
   const {
     title = '',
@@ -161,10 +211,6 @@ export default async function decorate(block) {
     maxItems = '10',
     showDate = 'true',
   } = data;
-
-  // Debug: log extracted cfPath
-  // eslint-disable-next-line no-console
-  console.log('[Announcement] Extracted cfPath:', cfPath);
 
   block.innerHTML = '';
 
@@ -185,15 +231,15 @@ export default async function decorate(block) {
   block.appendChild(container);
 
   if (!cfPath) {
+    console.error('❌ cfPath 是空的！');
     newsList.innerHTML = '<div class="error">請設定公告資料夾路徑</div>';
     return;
   }
 
+  console.log('🚀 開始 fetch announcements...');
   const announcements = await fetchAnnouncements(cfPath);
 
-  // Debug: log GraphQL response and announcements
-  // eslint-disable-next-line no-console
-  console.log('[Announcement] Fetched announcements:', announcements);
+  console.log('📬 fetch 結果:', announcements);
 
   newsList.innerHTML = '';
 
@@ -208,6 +254,7 @@ export default async function decorate(block) {
   }
 
   const displayItems = announcements.slice(0, parseInt(maxItems, 10));
+  console.log('📝 顯示', displayItems.length, '筆資料');
 
   displayItems.forEach((announcement) => {
     const item = document.createElement('a');
@@ -228,4 +275,6 @@ export default async function decorate(block) {
 
     newsList.appendChild(item);
   });
+  
+  console.log('=== News Block 完成 ===');
 }
