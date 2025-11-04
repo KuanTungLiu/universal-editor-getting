@@ -185,11 +185,32 @@ async function fetchAnnouncements(cfPath) {
         const nodeName = item._name || ''; // eslint-disable-line no-underscore-dangle
         console.log('    _name:', nodeName);
 
-        // Content Fragment data is often nested in jcr:content/data/master
+        // Content Fragment data is nested deep in jcr:content/data/master
         const jcrContent = item['jcr:content'];
-        const cfData = jcrContent?.data?.master || jcrContent?.data || jcrContent;
-
         console.log('    jcr:content:', jcrContent);
+
+        // Check if data exists at different levels
+        let cfData = null;
+        if (jcrContent) {
+          console.log('    jcr:content keys:', Object.keys(jcrContent));
+
+          // Try data.master first (most common for CF)
+          if (jcrContent.data) {
+            console.log('    jcr:content.data exists, keys:', Object.keys(jcrContent.data));
+            if (jcrContent.data.master) {
+              cfData = jcrContent.data.master;
+              console.log('    ✓ 使用 data.master');
+            } else {
+              cfData = jcrContent.data;
+              console.log('    ✓ 使用 data');
+            }
+          } else {
+            // Fallback to jcr:content itself
+            cfData = jcrContent;
+            console.log('    ⚠️ data 不存在，使用 jcr:content');
+          }
+        }
+
         console.log('    CF data:', cfData);
         if (cfData) {
           console.log('    CF data keys:', Object.keys(cfData));
