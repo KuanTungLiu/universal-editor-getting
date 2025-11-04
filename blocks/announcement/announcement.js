@@ -192,13 +192,27 @@ export default async function decorate(block) {
   } else {
     console.log('⚠️ 沒有 data-aue-prop，使用 table 模式');
     const rows = [...block.children];
-    rows.forEach((row) => {
+    console.log('📋 找到', rows.length, '個 rows');
+    rows.forEach((row, i) => {
+      console.log(`  Row ${i}:`, row);
       const cells = [...row.children];
+      console.log(`    Cells (${cells.length}):`, cells);
       if (cells.length >= 2) {
         const key = cells[0].textContent.trim();
-        const value = cells[1].textContent.trim();
-        console.log('  -', key, ':', value);
-        data[key] = value;
+        const valueCell = cells[1];
+        console.log(`    Key: "${key}"`);
+        console.log('    Value cell:', valueCell);
+        console.log('    Value cell HTML:', valueCell.innerHTML);
+
+        // Special handling for cfPath - it might be a link or urn
+        if (key === 'cfPath' || key === 'CF Folder Path' || key.includes('公告資料夾')) {
+          data.cfPath = extractCfPath(valueCell);
+          console.log('  - cfPath (extracted):', data.cfPath);
+        } else {
+          const value = valueCell.textContent.trim();
+          console.log('  -', key, ':', value);
+          data[key] = value;
+        }
       }
     });
   }
