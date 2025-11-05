@@ -1,3 +1,7 @@
+/* 使用 GraphQL 取得公告列表，預設失敗時回退到 JCR JSON（可關閉） */
+const GQL_ENDPOINT = '/content/cq:graphql/ktliu-testing/endpoint.graphql';
+const ENABLE_JCR_FALLBACK = true;
+
 function extractCfPath(el) {
   if (!el) return '';
   const link = el.querySelector && el.querySelector('a');
@@ -31,41 +35,101 @@ function extractCfPath(el) {
   return '';
 }
 
-async function fetchAnnouncements(cfPath) {
-  console.log('🔍 開始 fetch，路徑:', cfPath);
+/* GraphQL 版本：以 endpoint.graphql 呼叫 CubAnnouncementsByPath */
+async function fetchAnnouncementsGQL(cfPath, limit = 10) {
+  console.log('🔍 [GQL] 開始 fetch，路徑:', cfPath, '，limit:', limit);
+
+  const query = `
+    query CubAnnouncementsByPath($path: ID!, $limit: Int = 10) {
+      cubAnnouncementPaginated(
+        first: $limit
+        filter: {
+          _path: { _expressions: [{ value: $path, _operator: STARTS_WITH }] }
+        }
+      ) {
+        edges {
+          node {
+            _path
+            noticeTitle
+            noticeDate
+            noticeContent { html }
+          }
+        }
+      }
+    }
+  `;
+
+  const res = await fetch(GQL_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify({
+      query,
+      variables: { path: cfPath, limit: Number(limit) },
+    }),
+  });
+
+  console.log('🔁 [GQL] HTTP 狀態:', res.status);
+  if (!res.ok) throw new Error(`GraphQL HTTP ${res.status}`);
+
+  const payload = await res.json();
+  if (payload.errors && payload.errors.length) {
+    throw new Error(payload.errors.map((e) => e.message).join('; '));
+  }
+
+  const edges = payload?.data?.cubAnnouncementPaginated?.edges || [];
+  const items = edges.map(({ node }) => ({
+    path: node._path || '',
+    title: node.noticeTitle || '',
+    date: node.noticeDate || '',
+    excerpt: node.noticeContent?.html || '',
+  }));
+
+  // 過濾未來日期、日期新到舊排序（沿用原本行為）
+  const now = new Date();
+  const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const announcements = items
+    .filter((item) => {
+      if (!item.title) return false;
+      if (!item.date) return true;
+      const d = new Date(item.date);
+      const dOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      return dOnly <= todayOnly;
+    })
+    .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+  console.log('✅ [GQL] 解析出', announcements.length, '個公告');
+  return announcements;
+}
+
+/* 原本的 JCR JSON 版本（保留做為回退用） */
+async function fetchAnnouncementsJcr(cfPath) {
+  console.log('🔍 [JCR] 開始 fetch，路徑:', cfPath);
 
   try {
-    // Use AEM's .json API to fetch folder contents
-    // Decode URL-encoded path for display
     const decodedPath = decodeURIComponent(cfPath);
-    console.log('📂 解碼後路徑:', decodedPath);
-
-    // Try different API endpoints with varying depth and selectors
-    // - .infinity.json = all descendants (needed for CF data.master)
-    // - .2.json = depth 2 (includes children and their children)
-    // - .1.json = depth 1 (includes immediate children)
     const endpoints = [
-      `${cfPath}.infinity.json`, // all levels (needed for CF data)
-      `${decodedPath}.infinity.json`, // decoded path, all levels
-      `${cfPath}.2.json`, // depth 2
-      `${cfPath}.1.json`, // depth 1
-      `${decodedPath}.2.json`, // decoded path, depth 2
-      `${cfPath}.json`, // default (no children)
+      `${cfPath}.infinity.json`,
+      `${decodedPath}.infinity.json`,
+      `${cfPath}.2.json`,
+      `${cfPath}.1.json`,
+      `${decodedPath}.2.json`,
+      `${cfPath}.json`,
     ];
 
     let data = null;
     let successUrl = null;
 
-    // Try each endpoint
     for (let i = 0; i < endpoints.length; i += 1) {
       const url = endpoints[i];
       console.log(`🌐 嘗試端點 ${i + 1}:`, url);
-
       try {
         // eslint-disable-next-line no-await-in-loop
         const res = await fetch(url);
         console.log('  ↪️ 狀態:', res.status);
-
         if (res.ok) {
           // eslint-disable-next-line no-await-in-loop
           data = await res.json();
@@ -86,19 +150,15 @@ async function fetchAnnouncements(cfPath) {
     console.log('🎉 成功從', successUrl, '取得資料');
     console.log('🔑 資料的所有 keys:', Object.keys(data));
 
-    // Parse children/items from the response
     let items = [];
 
-    // AEM can return data in different formats
     if (Array.isArray(data)) {
       items = data;
       console.log('📋 資料是陣列，長度:', items.length);
     } else if (data && typeof data === 'object') {
-      // Log all keys to see what's available
       const allKeys = Object.keys(data);
       console.log('🔍 檢查這些 keys:', allKeys);
 
-      // Try to find children in various possible keys
       const possibleChildKeys = [
         ':children',
         'children',
@@ -119,10 +179,8 @@ async function fetchAnnouncements(cfPath) {
             console.log(`📋 從 ${key} 取得項目，長度:`, items.length);
             break;
           } else if (typeof data[key] === 'object') {
-            // Maybe it's nested deeper
             const nestedKeys = Object.keys(data[key]);
             console.log(`  ${key} 是物件，它的 keys:`, nestedKeys);
-            // Check if any nested key contains an array
             for (let j = 0; j < nestedKeys.length; j += 1) {
               const nestedKey = nestedKeys[j];
               if (Array.isArray(data[key][nestedKey])) {
@@ -138,25 +196,18 @@ async function fetchAnnouncements(cfPath) {
       }
 
       if (!foundKey) {
-        // When using depth parameters (.1.json, .2.json), AEM returns child nodes
-        // as direct properties of the parent object (not in a "children" array)
-        // Filter for properties that look like content fragments
-        // (exclude jcr: and sling: properties)
         console.log('⚠️ 沒找到標準的子項目 key');
         console.log('🔍 嘗試從物件屬性中提取子節點...');
 
         const childNodes = [];
         allKeys.forEach((key) => {
-          // Skip JCR/Sling system properties
           if (key.startsWith('jcr:') || key.startsWith('sling:') || key.startsWith('rep:')) {
             console.log(`  ⏭️ 跳過系統屬性: ${key}`);
             return;
           }
-
           const value = data[key];
           if (value && typeof value === 'object' && !Array.isArray(value)) {
             console.log(`  ✓ 找到可能的子節點: ${key}`, value);
-            // Add the key as a property so we can track it
             childNodes.push({ ...value, _name: key });
           }
         });
@@ -165,7 +216,6 @@ async function fetchAnnouncements(cfPath) {
           items = childNodes;
           console.log(`📋 從物件屬性中提取出 ${childNodes.length} 個子節點`);
         } else {
-          // Last resort: treat the whole object as single item
           console.log('⚠️ 完全沒找到子項目，將整個物件視為單一項目');
           console.log('📋 完整資料結構:', JSON.stringify(data, null, 2));
           items = [data];
@@ -175,61 +225,31 @@ async function fetchAnnouncements(cfPath) {
 
     console.log('🔍 總共找到', items.length, '個項目');
 
-    // Filter and map to announcement format
     const announcements = items
       .filter((item) => item && typeof item === 'object')
       .map((item) => {
-        console.log('  處理項目:', item);
-        console.log('    項目的 keys:', Object.keys(item));
-        const nodeName = item._name || ''; // eslint-disable-line no-underscore-dangle
-        console.log('    _name:', nodeName);
-
-        // Content Fragment data is nested deep in jcr:content/data/master
+        const nodeName = item._name || '';
         const jcrContent = item['jcr:content'];
-        console.log('    jcr:content:', jcrContent);
 
-        // Check if data exists at different levels
         let cfData = null;
         if (jcrContent) {
-          console.log('    jcr:content keys:', Object.keys(jcrContent));
-
-          // Check contentFragment property
-          if (jcrContent.contentFragment) {
-            console.log('    contentFragment:', jcrContent.contentFragment);
-            if (typeof jcrContent.contentFragment === 'object') {
-              console.log('    contentFragment keys:', Object.keys(jcrContent.contentFragment));
-            }
-          }
-
-          // Try data.master first (most common for CF)
           if (jcrContent.data) {
-            console.log('    jcr:content.data exists, keys:', Object.keys(jcrContent.data));
             if (jcrContent.data.master) {
               cfData = jcrContent.data.master;
-              console.log('    ✓ 使用 data.master');
             } else {
               cfData = jcrContent.data;
-              console.log('    ✓ 使用 data');
             }
           } else {
-            // Fallback to jcr:content itself
             cfData = jcrContent;
-            console.log('    ⚠️ data 不存在，使用 jcr:content');
-            console.log('    ⚠️ 可能需要更高的深度參數才能取得 CF 資料');
           }
         }
 
-        console.log('    CF data:', cfData);
-        if (cfData) {
-          console.log('    CF data keys:', Object.keys(cfData));
-        } // Try different property name conventions
         const pathKey = 'jcr:path';
         const titleKey = 'jcr:title';
         const createdKey = 'jcr:created';
         const modifiedKey = 'jcr:lastModified';
         const undscorePath = '_path';
 
-        // Try to get title from CF data first, then fallback to item properties
         const title = cfData?.noticeTitle
           || cfData?.title
           || cfData?.[titleKey]
@@ -238,10 +258,9 @@ async function fetchAnnouncements(cfPath) {
           || item.noticeTitle
           || item.name
           || item['jcr:name']
-          || nodeName // Use the node name we added
+          || nodeName
           || '';
 
-        // Try to get date from CF data first
         const date = cfData?.noticeDate
           || cfData?.date
           || cfData?.published
@@ -252,7 +271,6 @@ async function fetchAnnouncements(cfPath) {
           || item.published
           || '';
 
-        // Try to get excerpt from CF data
         const excerpt = cfData?.noticeContent?.plaintext
           || cfData?.noticeContent
           || cfData?.excerpt
@@ -268,8 +286,6 @@ async function fetchAnnouncements(cfPath) {
           || item[undscorePath]
           || `${cfPath}/${item.name || item['jcr:name'] || nodeName || ''}`;
 
-        console.log('    -> title:', title, ', date:', date, ', path:', path);
-
         return {
           path,
           title: title.toString().trim(),
@@ -279,16 +295,11 @@ async function fetchAnnouncements(cfPath) {
       })
       .filter((item) => {
         const hasTitle = !!item.title;
-        if (!hasTitle) {
-          console.log('  ⚠️ 過濾掉沒有標題的項目:', item);
-          return false;
-        }
+        if (!hasTitle) return false;
 
-        // Filter out future announcements (only show published ones)
         if (item.date) {
           const noticeDate = new Date(item.date);
           const now = new Date();
-          // Remove time component for fair comparison
           const noticeDateOnly = new Date(
             noticeDate.getFullYear(),
             noticeDate.getMonth(),
@@ -299,26 +310,16 @@ async function fetchAnnouncements(cfPath) {
             now.getMonth(),
             now.getDate(),
           );
-
-          if (noticeDateOnly > todayOnly) {
-            console.log(`  ⏭️ 過濾掉未來日期的公告: ${item.title} (${item.date})`);
-            return false;
-          }
+          if (noticeDateOnly > todayOnly) return false;
         }
-
         return true;
-      }) // Only keep items with titles and published dates
-      .sort((a, b) => {
-        // Sort by date descending (newest first)
-        const dateA = new Date(a.date || 0);
-        const dateB = new Date(b.date || 0);
-        return dateB - dateA;
-      });
+      })
+      .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
-    console.log('✅ 解析出', announcements.length, '個公告:', announcements);
+    console.log('✅ [JCR] 解析出', announcements.length, '個公告');
     return announcements;
   } catch (err) {
-    console.error('❌ fetchAnnouncements 錯誤:', err);
+    console.error('❌ [JCR] fetchAnnouncements 錯誤:', err);
     return { error: true, message: '無法連線至伺服器' };
   }
 }
@@ -333,7 +334,7 @@ function formatDate(dateString) {
 }
 
 export default async function decorate(block) {
-  console.log('=== News Block 開始 ===');
+  console.log('=== News Block 開始（GraphQL 版） ===');
   console.log('📦 Block:', block);
 
   const data = {};
@@ -344,11 +345,8 @@ export default async function decorate(block) {
   if (props.length > 0) {
     props.forEach((el) => {
       const key = el.getAttribute('data-aue-prop');
-      console.log('  -', key, ':', el);
-
       if (key === 'cfPath') {
         data.cfPath = extractCfPath(el);
-        console.log('    📂 解析出的路徑:', data.cfPath);
         return;
       }
       const txt = el.textContent.trim();
@@ -363,63 +361,35 @@ export default async function decorate(block) {
       if (key === 'title') data.title = txt;
     });
   } else {
-    console.log('⚠️ 沒有 data-aue-prop，使用 fallback 模式');
-
-    // Try to find any links or content in the block
+    // fallback 掃描
     const allLinks = block.querySelectorAll('a[href]');
-    console.log('🔗 找到', allLinks.length, '個連結');
-    allLinks.forEach((link, i) => {
-      console.log(`  Link ${i}:`, link.href, link.textContent);
+    allLinks.forEach((link) => {
       if (!data.cfPath && link.href && link.href.includes('/content/')) {
         data.cfPath = extractCfPath(link);
-        console.log('  ✅ 從連結提取 cfPath:', data.cfPath);
       }
     });
-
-    // Also check all text content
     const allText = block.textContent;
-    console.log('📝 Block 文字內容:', allText);
     if (!data.cfPath && allText.includes('/content/')) {
       const match = allText.match(/\/content\/[^\s"'<>]+/);
-      if (match) {
-        const matchedPath = match[0];
-        data.cfPath = matchedPath;
-        console.log('  ✅ 從文字提取 cfPath:', data.cfPath);
-      }
+      if (match) data.cfPath = match[0];
     }
-
     const rows = [...block.children];
-    console.log('📋 找到', rows.length, '個 rows');
-    rows.forEach((row, i) => {
-      console.log(`  Row ${i}:`, row);
+    rows.forEach((row) => {
       const cells = [...row.children];
-      console.log(`    Cells (${cells.length}):`, cells);
-
-      // Try to extract from single cell if available
       if (cells.length === 1) {
         const cell = cells[0];
-        console.log('    Single cell HTML:', cell.innerHTML);
         const cellLinks = cell.querySelectorAll('a[href]');
         if (cellLinks.length > 0 && !data.cfPath) {
           data.cfPath = extractCfPath(cellLinks[0]);
-          console.log('    ✅ 從 cell 連結提取 cfPath:', data.cfPath);
         }
       }
-
       if (cells.length >= 2) {
         const key = cells[0].textContent.trim();
         const valueCell = cells[1];
-        console.log(`    Key: "${key}"`);
-        console.log('    Value cell:', valueCell);
-        console.log('    Value cell HTML:', valueCell.innerHTML);
-
-        // Special handling for cfPath - it might be a link or urn
         if (key === 'cfPath' || key === 'CF Folder Path' || key.includes('公告資料夾')) {
           data.cfPath = extractCfPath(valueCell);
-          console.log('  - cfPath (extracted):', data.cfPath);
         } else {
           const value = valueCell.textContent.trim();
-          console.log('  -', key, ':', value);
           data[key] = value;
         }
       }
@@ -459,10 +429,22 @@ export default async function decorate(block) {
     return;
   }
 
-  console.log('🚀 開始 fetch announcements...');
-  const announcements = await fetchAnnouncements(cfPath);
+  console.log('🚀 開始以 GraphQL 取得公告...');
+  let announcements;
+  try {
+    announcements = await fetchAnnouncementsGQL(cfPath, parseInt(maxItems, 10));
+  } catch (e) {
+    console.error('❌ GraphQL 失敗：', e.message);
+    if (ENABLE_JCR_FALLBACK) {
+      console.log('↩️ 啟動 JCR JSON 回退機制...');
+      announcements = await fetchAnnouncementsJcr(cfPath);
+    } else {
+      newsList.innerHTML = `<div class="error">讀取公告失敗：${e.message}</div>`;
+      return;
+    }
+  }
 
-  console.log('📬 fetch 結果:', announcements);
+  console.log('📬 取得結果:', announcements);
 
   newsList.innerHTML = '';
 
@@ -471,7 +453,7 @@ export default async function decorate(block) {
     return;
   }
 
-  if (announcements.length === 0) {
+  if (!announcements || announcements.length === 0) {
     newsList.innerHTML = '<div class="no-data">目前沒有公告</div>';
     return;
   }
@@ -499,5 +481,5 @@ export default async function decorate(block) {
     newsList.appendChild(item);
   });
 
-  console.log('=== News Block 完成 ===');
+  console.log('=== News Block 完成（GraphQL 版） ===');
 }
