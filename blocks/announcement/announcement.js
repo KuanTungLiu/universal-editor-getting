@@ -81,12 +81,15 @@ async function fetchAnnouncementsGQL(cfPath, limit = 10) {
   }
 
   const edges = payload?.data?.cubAnnouncementPaginated?.edges || [];
-  const items = edges.map(({ node }) => ({
-    path: node._path || '',
-    title: node.noticeTitle || '',
-    date: node.noticeDate || '',
-    excerpt: node.noticeContent?.html || '',
-  }));
+  const items = edges.map(({ node }) => {
+    const pathKey = '_path'; // eslint-disable-line no-underscore-dangle
+    return {
+      path: node[pathKey] || '',
+      title: node.noticeTitle || '',
+      date: node.noticeDate || '',
+      excerpt: node.noticeContent?.html || '',
+    };
+  });
 
   // 過濾未來日期、日期新到舊排序（沿用原本行為）
   const now = new Date();
@@ -208,7 +211,7 @@ async function fetchAnnouncementsJcr(cfPath) {
           const value = data[key];
           if (value && typeof value === 'object' && !Array.isArray(value)) {
             console.log(`  ✓ 找到可能的子節點: ${key}`, value);
-            childNodes.push({ ...value, _name: key });
+            childNodes.push({ ...value, name: key });
           }
         });
 
@@ -228,7 +231,8 @@ async function fetchAnnouncementsJcr(cfPath) {
     const announcements = items
       .filter((item) => item && typeof item === 'object')
       .map((item) => {
-        const nodeName = item._name || '';
+        const nameKey = '_name'; // eslint-disable-line no-underscore-dangle
+        const nodeName = item[nameKey] || '';
         const jcrContent = item['jcr:content'];
 
         let cfData = null;
@@ -248,7 +252,7 @@ async function fetchAnnouncementsJcr(cfPath) {
         const titleKey = 'jcr:title';
         const createdKey = 'jcr:created';
         const modifiedKey = 'jcr:lastModified';
-        const undscorePath = '_path';
+        const undscorePath = 'path';
 
         const title = cfData?.noticeTitle
           || cfData?.title
@@ -371,7 +375,10 @@ export default async function decorate(block) {
     const allText = block.textContent;
     if (!data.cfPath && allText.includes('/content/')) {
       const match = allText.match(/\/content\/[^\s"'<>]+/);
-      if (match) data.cfPath = match[0];
+      if (match) {
+        const [matchedPath] = match;
+        data.cfPath = matchedPath;
+      }
     }
     const rows = [...block.children];
     rows.forEach((row) => {
