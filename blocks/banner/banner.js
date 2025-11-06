@@ -84,12 +84,24 @@ export default function decorate(block) {
       const mainHref = mainLinkEl ? mainLinkEl.getAttribute('href') : '#';
       const subHref = subLinkEl ? subLinkEl.getAttribute('href') : '#';
 
-      // Hide button-related fields in editor mode
-      const mainButtonLinkWrapper = block.querySelector('[data-aue-prop="mainButtonLink"]');
-      const subButtonLinkWrapper = block.querySelector('[data-aue-prop="subButtonLink"]');
+      // Hide button-related fields in editor mode - hide all button-related props
+      const buttonProps = block.querySelectorAll(
+        '[data-aue-prop="mainButtonText"], '
+        + '[data-aue-prop="subButtonText"], '
+        + '[data-aue-prop="mainButtonLink"], '
+        + '[data-aue-prop="subButtonLink"], '
+        + '[data-aue-prop="mainButtonSettings"], '
+        + '[data-aue-prop="subButtonSettings"]',
+      );
 
-      [mainTextEl, subTextEl, mainButtonLinkWrapper, subButtonLinkWrapper].forEach((el) => {
-        if (el) el.style.display = 'none';
+      buttonProps.forEach((el) => {
+        if (el) {
+          el.style.display = 'none';
+          // Also hide parent if it's a container
+          if (el.parentElement && el.parentElement.classList.contains('container')) {
+            el.parentElement.style.display = 'none';
+          }
+        }
       });
 
       const btnContainer = document.createElement('div');
