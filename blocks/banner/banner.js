@@ -46,7 +46,17 @@ export default function decorate(block) {
       const buttonCountEl = block.querySelector('[data-aue-prop="buttonCount"]');
 
       const titleText = titleEl ? titleEl.textContent.trim() : data.title || '';
-      const subtitleHtml = subtitleEl ? subtitleEl.innerHTML : '';
+      // 只取 richtext 本身的內容，不包含其他欄位
+      let subtitleHtml = '';
+      if (subtitleEl) {
+        // 只取 data-aue-prop="subtitle" 元素本身的直接內容
+        // 避免抓到其他 data-aue-prop 欄位
+        const clone = subtitleEl.cloneNode(true);
+        // 移除所有帶有 data-aue-prop 的子元素（這些是其他欄位）
+        const nestedProps = clone.querySelectorAll('[data-aue-prop]');
+        nestedProps.forEach((el) => el.remove());
+        subtitleHtml = clone.innerHTML;
+      }
       const imgSrc = imageInWrapper ? imageInWrapper.getAttribute('src') : (data.image || '');
       const buttonCountVal = buttonCountEl ? buttonCountEl.textContent.trim().toLowerCase() : (data.buttonCount || '').toLowerCase();
 
