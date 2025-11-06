@@ -1,5 +1,6 @@
 /* 使用 GraphQL 取得公告列表，預設失敗時回退到 JCR JSON（可關閉） */
-const GQL_ENDPOINT = '/content/cq:graphql/ktliu-testing/endpoint';
+// 使用本地 proxy 來繞過 CORS 問題
+const GQL_ENDPOINT = '/api/graphql-proxy';
 const ENABLE_JCR_FALLBACK = true;
 
 function extractCfPath(el) {
