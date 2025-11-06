@@ -65,11 +65,33 @@ function filterAndSortAnnouncements(items = []) {
     .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 }
 
+/* Normalize path for PQ: if cfPath already contains percent-encoding (%xx),
+   decode it first so we don't double-encode. Then encodeURIComponent once. */
+function normalizeCfPathForQuery(cfPath) {
+  if (!cfPath) return '';
+  try {
+    // detect if contains percent-encoding like %E5 or %2F
+    const hasPercentEncoding = /%[0-9A-Fa-f]{2}/.test(cfPath);
+    const decoded = hasPercentEncoding ? decodeURIComponent(cfPath) : cfPath;
+    return encodeURIComponent(decoded);
+  } catch (e) {
+    // 如果 decode 出錯（極少數），fallback 為 encode 原始字串
+    return encodeURIComponent(cfPath);
+  }
+}
+
 /* 優先使用 Persisted Query (GET) */
 async function fetchAnnouncementsPQ(cfPath, limit = 10) {
-  const url = `${PQ_BASE}?path=${encodeURIComponent(cfPath)}&limit=${encodeURIComponent(limit)}`;
+  // Normalize to avoid double-encoding (fixes Variable 'path' coerced Null)
+  const encodedPath = normalizeCfPathForQuery(cfPath);
+  const url = `${PQ_BASE}?path=${encodedPath}&limit=${encodeURIComponent(limit)}`;
+  // eslint-disable-next-line no-console
+  console.log('🔍 [PQ] 原始 cfPath:', cfPath);
+  // eslint-disable-next-line no-console
+  console.log('🔍 [PQ] 編碼後 encodedPath:', encodedPath);
   // eslint-disable-next-line no-console
   console.log('🔍 [PQ] 嘗試 GET:', url);
+
   const res = await fetch(url, {
     method: 'GET',
     credentials: 'same-origin', // 若需跨域帶 cookie，改 'include' 並確保 CORS supportsCredentials=true
