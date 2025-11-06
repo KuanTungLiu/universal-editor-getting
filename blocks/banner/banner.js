@@ -220,9 +220,7 @@ export default function decorate(block) {
     if (!data.subButtonLink) {
       data.subButtonLink = '#';
     }
-
     // parsed fallback data available in `data`
-
     // Editor mode: enhance buttons in table mode
     if (isEditor) {
       rows.forEach((row) => {
@@ -231,7 +229,9 @@ export default function decorate(block) {
         const p = cell.querySelector('p');
         if (p) {
           const text = p.textContent.trim().toLowerCase();
+          // Check if this is a button row (for future enhancements)
           if (text.includes('button') || text === 'main-and-sub' || text === 'main-only') {
+            // Button row detected - no additional processing needed in editor mode
           }
         }
       });
