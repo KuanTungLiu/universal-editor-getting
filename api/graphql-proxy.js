@@ -1,21 +1,21 @@
-export async function onRequest(context) {
+export default async function onRequest(context) {
   // 實際的 AEM endpoint
   const AEM_ENDPOINT = 'https://publish-p115457-e1250159.adobeaemcloud.com/graphql/execute.json/ktliu-testing/Announcement';
-  
+
   // 取得前端傳來的 request body
   const body = await context.request.text();
-  
+
   try {
     // 轉發到 AEM
     const response = await fetch(AEM_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        Accept: 'application/json',
         // 如果需要認證，加在這裡
         // 'Authorization': 'Bearer YOUR_TOKEN',
       },
-      body: body,
+      body,
     });
 
     // 取得 AEM 的回應
@@ -32,9 +32,9 @@ export async function onRequest(context) {
       },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ 
-      error: true, 
-      message: error.message 
+    return new Response(JSON.stringify({
+      error: true,
+      message: error.message,
     }), {
       status: 500,
       headers: {
