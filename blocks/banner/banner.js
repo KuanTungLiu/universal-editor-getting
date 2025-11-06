@@ -125,7 +125,6 @@ export default function decorate(block) {
     // ====== 根據實際 HTML 結構解析 ======
     const rows = [...block.children];
 
-    // 根據你的 HTML 結構，依序解析每一行
     if (rows.length >= 1 && rows[0].children[0]) {
       // 第1行：title
       const titleCell = rows[0].children[0];
@@ -233,7 +232,6 @@ export default function decorate(block) {
         if (p) {
           const text = p.textContent.trim().toLowerCase();
           if (text.includes('button') || text === 'main-and-sub' || text === 'main-only') {
-            // 這可能是按鈕相關的內容，保持原樣
           }
         }
       });

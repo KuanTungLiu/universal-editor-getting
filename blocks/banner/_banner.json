@@ -72,12 +72,12 @@
                     "component": "fieldset",
                     "name": "mainButtonSettings",
                     "label": "Main Button Settings / 主要按鈕設定",
-                    "showIf": "buttonCount == 'main-only' || buttonCount == 'main-and-sub'",
+                    "collapsible": true,
                     "fields": [
                         {
-                            "component": "text",
+                            "component": "text-input",
                             "name": "mainButtonText",
-                            "label": "重要公告",
+                            "label": "Main Button Text / 主要按鈕文字",
                             "required": true
                         },
                         {
@@ -95,9 +95,9 @@
                     "showIf": "buttonCount == 'main-and-sub'",
                     "fields": [
                         {
-                            "component": "text",
+                            "component": "text-input",
                             "name": "subButtonText",
-                            "label": "新聞直播",
+                            "label": "Sub Button Text / 次要按鈕文字",
                             "required": true
                         },
                         {
