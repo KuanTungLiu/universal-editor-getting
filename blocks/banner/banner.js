@@ -3,6 +3,40 @@ export default function decorate(block) {
 
   const norm = (v) => (typeof v === 'string' ? v.trim() : v);
 
+  // Extract AEM content path from aem-content component
+  const extractContentPath = (el) => {
+    if (!el) return '';
+    const link = el.querySelector && el.querySelector('a');
+    const candidates = [];
+    if (link) {
+      candidates.push(link.getAttribute('href'));
+      candidates.push(link.href);
+      if (link.dataset) candidates.push(link.dataset.value, link.dataset.href);
+      candidates.push(link.getAttribute('data-value'));
+      candidates.push(link.getAttribute('data-href'));
+      candidates.push(link.textContent && link.textContent.trim());
+    }
+    if (el.dataset) candidates.push(el.dataset.value, el.dataset.href);
+    candidates.push(el.getAttribute && el.getAttribute('data-value'));
+    candidates.push(el.getAttribute && el.getAttribute('data-href'));
+    candidates.push(el.textContent && el.textContent.trim());
+
+    const normalized = candidates
+      .filter(Boolean)
+      .map((v) => v.toString().trim());
+
+    const direct = normalized.find((v) => v.startsWith('/content/'));
+    if (direct) return direct;
+
+    for (let i = 0; i < normalized.length; i += 1) {
+      const v = normalized[i];
+      const idx = v.indexOf('/content/');
+      if (idx !== -1) return v.slice(idx).split(/[\s"']+/)[0];
+    }
+
+    return '';
+  };
+
   const data = {};
 
   // Parse data-aue-prop authored content
@@ -62,7 +96,7 @@ export default function decorate(block) {
       if (mainTextEl) mainText = mainTextEl.textContent.trim();
       if (subTextEl) subText = subTextEl.textContent.trim();
 
-      // Get button links directly from DOM
+      // Get button links directly from DOM (extract AEM content paths)
       let mainHref = '';
       let subHref = '';
 
@@ -72,14 +106,10 @@ export default function decorate(block) {
       if (mainLinkWrapper) {
         // eslint-disable-next-line no-console
         console.log('mainLinkWrapper innerHTML:', mainLinkWrapper.innerHTML);
-        const a = mainLinkWrapper.querySelector('a[href]');
+        // Use extractContentPath to get AEM content path
+        mainHref = extractContentPath(mainLinkWrapper);
         // eslint-disable-next-line no-console
-        console.log('Found anchor in mainLinkWrapper:', a);
-        if (a) {
-          mainHref = a.getAttribute('href');
-          // eslint-disable-next-line no-console
-          console.log('Extracted mainHref:', mainHref);
-        }
+        console.log('Extracted mainHref (content path):', mainHref);
       }
 
       const subLinkWrapper = block.querySelector('[data-aue-prop="subButtonLink"]');
@@ -88,14 +118,10 @@ export default function decorate(block) {
       if (subLinkWrapper) {
         // eslint-disable-next-line no-console
         console.log('subLinkWrapper innerHTML:', subLinkWrapper.innerHTML);
-        const a = subLinkWrapper.querySelector('a[href]');
+        // Use extractContentPath to get AEM content path
+        subHref = extractContentPath(subLinkWrapper);
         // eslint-disable-next-line no-console
-        console.log('Found anchor in subLinkWrapper:', a);
-        if (a) {
-          subHref = a.getAttribute('href');
-          // eslint-disable-next-line no-console
-          console.log('Extracted subHref:', subHref);
-        }
+        console.log('Extracted subHref (content path):', subHref);
       }
 
       // Debug: log parsed values
