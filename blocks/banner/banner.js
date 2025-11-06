@@ -84,44 +84,54 @@ export default function decorate(block) {
       const mainHref = mainLinkEl ? mainLinkEl.getAttribute('href') : '#';
       const subHref = subLinkEl ? subLinkEl.getAttribute('href') : '#';
 
-      // Hide button-related fields in editor mode
-      // Hide the text elements and their parent divs
+      // Hide button-related fields in editor mode - use !important to ensure hiding
+      const hideElement = (el) => {
+        if (!el) return;
+        el.style.setProperty('display', 'none', 'important');
+        // Also hide all child elements
+        const children = el.querySelectorAll('*');
+        children.forEach((child) => {
+          child.style.setProperty('display', 'none', 'important');
+        });
+      };
+
+      // Hide text fields and their parents
       if (mainTextEl) {
-        mainTextEl.style.display = 'none';
-        if (mainTextEl.parentElement) mainTextEl.parentElement.style.display = 'none';
+        hideElement(mainTextEl);
+        hideElement(mainTextEl.parentElement);
       }
       if (subTextEl) {
-        subTextEl.style.display = 'none';
-        if (subTextEl.parentElement) subTextEl.parentElement.style.display = 'none';
+        hideElement(subTextEl);
+        hideElement(subTextEl.parentElement);
       }
 
-      // Hide the link containers - they don't have data-aue-prop,
-      // so we need to find them by looking for their parent divs
+      // Hide link containers and their parents
       const mainLinkContainer = block.querySelector('[data-aue-prop="mainButtonLink"]');
       const subLinkContainer = block.querySelector('[data-aue-prop="subButtonLink"]');
 
       if (mainLinkContainer) {
-        mainLinkContainer.style.display = 'none';
-        // Also hide the wrapper div (parent of the container)
-        if (mainLinkContainer.parentElement) {
-          mainLinkContainer.parentElement.style.display = 'none';
+        hideElement(mainLinkContainer);
+        hideElement(mainLinkContainer.parentElement);
+        // Also hide next sibling if it exists (sometimes the actual content is in sibling)
+        if (mainLinkContainer.nextElementSibling) {
+          hideElement(mainLinkContainer.nextElementSibling);
         }
       }
 
       if (subLinkContainer) {
-        subLinkContainer.style.display = 'none';
-        // Also hide the wrapper div (parent of the container)
-        if (subLinkContainer.parentElement) {
-          subLinkContainer.parentElement.style.display = 'none';
+        hideElement(subLinkContainer);
+        hideElement(subLinkContainer.parentElement);
+        if (subLinkContainer.nextElementSibling) {
+          hideElement(subLinkContainer.nextElementSibling);
         }
       }
 
-      // Also hide mainButtonSettings and subButtonSettings containers if they exist
+      // Hide settings containers
       const mainSettings = block.querySelector('[data-aue-prop="mainButtonSettings"]');
       const subSettings = block.querySelector('[data-aue-prop="subButtonSettings"]');
 
-      if (mainSettings) mainSettings.style.display = 'none';
-      if (subSettings) subSettings.style.display = 'none';
+      if (mainSettings) hideElement(mainSettings);
+      if (subSettings) hideElement(subSettings);
 
       const btnContainer = document.createElement('div');
       btnContainer.className = 'banner-buttons';
