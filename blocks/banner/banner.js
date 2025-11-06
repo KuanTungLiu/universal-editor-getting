@@ -125,8 +125,37 @@ export default function decorate(block) {
 
       const mainText = mainTextEl ? mainTextEl.textContent.trim() : (data.mainButtonText || '');
       const subText = subTextEl ? subTextEl.textContent.trim() : (data.subButtonText || '');
-      const mainHref = (mainLinkEl && mainLinkEl.getAttribute('href')) || data.mainButtonLink || '#';
-      const subHref = (subLinkEl && subLinkEl.getAttribute('href')) || data.subButtonLink || '#';
+
+      // Extract hrefs - first try from found elements, then from data
+      let mainHref = '#';
+      let subHref = '#';
+
+      // Try to get href from elements
+      if (mainLinkEl && mainLinkEl.getAttribute('href')) {
+        mainHref = mainLinkEl.getAttribute('href');
+      } else {
+        // Fallback: search for any <a> tag in mainButtonLink wrapper
+        const mainLinkWrapper = block.querySelector('[data-aue-prop="mainButtonLink"]');
+        if (mainLinkWrapper) {
+          const a = mainLinkWrapper.querySelector('a[href]');
+          if (a) {
+            mainHref = a.getAttribute('href');
+          }
+        }
+      }
+
+      if (subLinkEl && subLinkEl.getAttribute('href')) {
+        subHref = subLinkEl.getAttribute('href');
+      } else {
+        // Fallback: search for any <a> tag in subButtonLink wrapper
+        const subLinkWrapper = block.querySelector('[data-aue-prop="subButtonLink"]');
+        if (subLinkWrapper) {
+          const a = subLinkWrapper.querySelector('a[href]');
+          if (a) {
+            subHref = a.getAttribute('href');
+          }
+        }
+      }
 
       // Debug: log parsed values
       // eslint-disable-next-line no-console
