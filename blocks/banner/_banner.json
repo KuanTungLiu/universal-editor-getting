@@ -68,13 +68,19 @@
         ]
       },
       {
-        "component": "fieldset",
+        "component": "container",
         "name": "mainButtonSettings",
         "label": "Main Button Settings / 主要按鈕設定",
         "collapsible": true,
+        "condition": {
+          "or": [
+            { "===": [{ "var": "buttonCount" }, "main-only"] },
+            { "===": [{ "var": "buttonCount" }, "main-and-sub"] }
+          ]
+        },
         "fields": [
           {
-            "component": "text-input",
+            "component": "text",
             "name": "mainButtonText",
             "label": "Main Button Text / 主要按鈕文字",
             "required": true
@@ -88,13 +94,19 @@
         ]
       },
       {
-        "component": "fieldset",
+        "component": "container",
         "name": "subButtonSettings",
         "label": "Sub Button Settings / 次要按鈕設定",
-        "showIf": "buttonCount == 'main-and-sub'",
+        "collapsible": true,
+        "condition": {
+          "===": [
+            { "var": "buttonCount" },
+            "main-and-sub"
+          ]
+        },
         "fields": [
           {
-            "component": "text-input",
+            "component": "text",
             "name": "subButtonText",
             "label": "Sub Button Text / 次要按鈕文字",
             "required": true
