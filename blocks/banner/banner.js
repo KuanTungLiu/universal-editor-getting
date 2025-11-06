@@ -123,8 +123,14 @@ export default function decorate(block) {
 
       const mainText = mainTextEl ? mainTextEl.textContent.trim() : (data.mainButtonText || '');
       const subText = subTextEl ? subTextEl.textContent.trim() : (data.subButtonText || '');
-      const mainHref = (mainLinkEl && mainLinkEl.getAttribute('href')) || data.mainButtonLink || '';
+      const mainHref = (mainLinkEl && mainLinkEl.getAttribute('href')) || data.mainButtonLink || '#';
       const subHref = (subLinkEl && subLinkEl.getAttribute('href')) || data.subButtonLink || '#';
+
+      // Debug: log parsed values
+      // eslint-disable-next-line no-console
+      console.log('Banner editor mode - button links:', {
+        mainHref, subHref, dataMainLink: data.mainButtonLink, dataSubLink: data.subButtonLink,
+      });
 
       // Hide button-related fields in editor mode - use !important to ensure hiding
       const hideElement = (el) => {
