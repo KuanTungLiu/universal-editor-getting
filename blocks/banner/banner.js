@@ -37,6 +37,8 @@ export default function decorate(block) {
       const titleEl = block.querySelector('[data-aue-prop="title"]');
       const subtitleEl = block.querySelector('[data-aue-prop="subtitle"]');
       const imageWrapper = block.querySelector('[data-aue-prop="image"]');
+      const buttonCountEl = block.querySelector('[data-aue-prop="buttonCount"]');
+
       let imageInWrapper = null;
       if (imageWrapper) {
         if (imageWrapper.tagName === 'IMG') {
@@ -45,13 +47,64 @@ export default function decorate(block) {
           imageInWrapper = imageWrapper.querySelector('img');
         }
       }
-      const buttonCountEl = block.querySelector('[data-aue-prop="buttonCount"]');
 
-      const titleText = titleEl ? titleEl.textContent.trim() : data.title || '';
+      // Extract values directly from DOM elements (don't rely on data object)
+      const titleText = titleEl ? titleEl.textContent.trim() : '';
       const subtitleHtml = subtitleEl ? subtitleEl.innerHTML : '';
-      const imgSrc = imageInWrapper ? imageInWrapper.getAttribute('src') : (data.image || '');
-      // Prefer parsed data value; fallback to any text content if present
-      const buttonCountVal = (data.buttonCount || (buttonCountEl ? buttonCountEl.textContent.trim() : '')).toLowerCase();
+      const imgSrc = imageInWrapper ? imageInWrapper.getAttribute('src') : '';
+      const buttonCountVal = buttonCountEl ? buttonCountEl.textContent.trim().toLowerCase() : 'none';
+
+      // Get button text directly from DOM
+      let mainText = '';
+      let subText = '';
+      const mainTextEl = block.querySelector('[data-aue-prop="mainButtonText"]');
+      const subTextEl = block.querySelector('[data-aue-prop="subButtonText"]');
+      if (mainTextEl) mainText = mainTextEl.textContent.trim();
+      if (subTextEl) subText = subTextEl.textContent.trim();
+
+      // Get button links directly from DOM
+      let mainHref = '#';
+      let subHref = '#';
+
+      const mainLinkWrapper = block.querySelector('[data-aue-prop="mainButtonLink"]');
+      if (mainLinkWrapper) {
+        const a = mainLinkWrapper.querySelector('a[href]');
+        if (a) {
+          mainHref = a.getAttribute('href');
+        }
+      }
+
+      const subLinkWrapper = block.querySelector('[data-aue-prop="subButtonLink"]');
+      if (subLinkWrapper) {
+        const a = subLinkWrapper.querySelector('a[href]');
+        if (a) {
+          subHref = a.getAttribute('href');
+        }
+      }
+
+      // Debug: log parsed values
+      // eslint-disable-next-line no-console
+      console.log('Banner editor mode - extracted values:', {
+        titleText, mainText, subText, mainHref, subHref, buttonCountVal,
+      });
+
+      // Hide button field wrappers to prevent them from displaying
+      const hideElement = (el) => {
+        if (!el) return;
+        el.style.setProperty('display', 'none', 'important');
+        const children = el.querySelectorAll('*');
+        children.forEach((child) => {
+          child.style.setProperty('display', 'none', 'important');
+        });
+      };
+
+      // Hide all button-related authored fields
+      [mainLinkWrapper, subLinkWrapper, mainTextEl, subTextEl].forEach((el) => {
+        if (el) {
+          hideElement(el);
+          if (el.parentElement) hideElement(el.parentElement);
+        }
+      });
 
       [titleEl, subtitleEl, imageWrapper, buttonCountEl].forEach((el) => {
         if (el) el.style.display = 'none';
@@ -76,126 +129,6 @@ export default function decorate(block) {
         s.innerHTML = subtitleHtml;
         content.appendChild(s);
       }
-
-      // 按鈕欄位在 mainButtonSettings 和 subButtonSettings 容器內（有些情況容器不會渲染成 DOM，需支援平行欄位）
-      const mainSettings = block.querySelector('[data-aue-prop="mainButtonSettings"]');
-      const subSettings = block.querySelector('[data-aue-prop="subButtonSettings"]');
-
-      let mainTextEl = null;
-      let mainLinkEl = null;
-      let subTextEl = null;
-      let subLinkEl = null;
-
-      // Prefer fields inside containers if they exist
-      if (mainSettings) {
-        mainTextEl = mainSettings.querySelector('[data-aue-prop="mainButtonText"]');
-        const mainLinkWrapper = mainSettings.querySelector('[data-aue-prop="mainButtonLink"]');
-        if (mainLinkWrapper) {
-          // Query deeply to find the anchor (might be nested in multiple divs)
-          mainLinkEl = mainLinkWrapper.querySelector('a[href]') || (mainLinkWrapper.tagName === 'A' ? mainLinkWrapper : null);
-        }
-      }
-
-      if (subSettings) {
-        subTextEl = subSettings.querySelector('[data-aue-prop="subButtonText"]');
-        const subLinkWrapper = subSettings.querySelector('[data-aue-prop="subButtonLink"]');
-        if (subLinkWrapper) {
-          // Query deeply to find the anchor (might be nested in multiple divs)
-          subLinkEl = subLinkWrapper.querySelector('a[href]') || (subLinkWrapper.tagName === 'A' ? subLinkWrapper : null);
-        }
-      }
-
-      // Fallback: query fields directly under the block if containers aren't present
-      if (!mainTextEl) mainTextEl = block.querySelector('[data-aue-prop="mainButtonText"]');
-      if (!subTextEl) subTextEl = block.querySelector('[data-aue-prop="subButtonText"]');
-
-      if (!mainLinkEl) {
-        const mainLinkWrapper = block.querySelector('[data-aue-prop="mainButtonLink"]');
-        if (mainLinkWrapper) {
-          mainLinkEl = mainLinkWrapper.querySelector('a[href]') || (mainLinkWrapper.tagName === 'A' ? mainLinkWrapper : null);
-        }
-      }
-
-      if (!subLinkEl) {
-        const subLinkWrapper = block.querySelector('[data-aue-prop="subButtonLink"]');
-        if (subLinkWrapper) {
-          subLinkEl = subLinkWrapper.querySelector('a[href]') || (subLinkWrapper.tagName === 'A' ? subLinkWrapper : null);
-        }
-      }
-
-      const mainText = mainTextEl ? mainTextEl.textContent.trim() : (data.mainButtonText || '');
-      const subText = subTextEl ? subTextEl.textContent.trim() : (data.subButtonText || '');
-
-      // Extract hrefs - first try from found elements, then from data
-      let mainHref = '#';
-      let subHref = '#';
-
-      // Try to get href from elements
-      if (mainLinkEl && mainLinkEl.getAttribute('href')) {
-        mainHref = mainLinkEl.getAttribute('href');
-      } else {
-        // Fallback: search for any <a> tag in mainButtonLink wrapper
-        const mainLinkWrapper = block.querySelector('[data-aue-prop="mainButtonLink"]');
-        if (mainLinkWrapper) {
-          const a = mainLinkWrapper.querySelector('a[href]');
-          if (a) {
-            mainHref = a.getAttribute('href');
-          }
-        }
-      }
-
-      if (subLinkEl && subLinkEl.getAttribute('href')) {
-        subHref = subLinkEl.getAttribute('href');
-      } else {
-        // Fallback: search for any <a> tag in subButtonLink wrapper
-        const subLinkWrapper = block.querySelector('[data-aue-prop="subButtonLink"]');
-        if (subLinkWrapper) {
-          const a = subLinkWrapper.querySelector('a[href]');
-          if (a) {
-            subHref = a.getAttribute('href');
-          }
-        }
-      }
-
-      // Debug: log parsed values
-      // eslint-disable-next-line no-console
-      console.log('Banner editor mode - all data:', data);
-      // eslint-disable-next-line no-console
-      console.log('Banner editor mode - button links:', {
-        mainHref, subHref, dataMainLink: data.mainButtonLink, dataSubLink: data.subButtonLink,
-      });
-
-      // Hide button-related fields in editor mode - use !important to ensure hiding
-      const hideElement = (el) => {
-        if (!el) return;
-        el.style.setProperty('display', 'none', 'important');
-        // Also hide all child elements
-        const children = el.querySelectorAll('*');
-        children.forEach((child) => {
-          child.style.setProperty('display', 'none', 'important');
-        });
-      };
-
-      // Hide authored UI: containers if present, or individual fields as fallback
-      if (mainSettings) hideElement(mainSettings);
-      if (subSettings) hideElement(subSettings);
-
-      [mainTextEl, subTextEl, mainLinkEl, subLinkEl].forEach((el) => {
-        if (!el) return;
-        hideElement(el);
-        if (el.parentElement) hideElement(el.parentElement);
-        if (el.nextElementSibling) hideElement(el.nextElementSibling);
-      });
-
-      // Extra safety: hide any remaining authored fields for button props
-      ['mainButtonText', 'mainButtonLink', 'subButtonText', 'subButtonLink'].forEach((propName) => {
-        const nodes = block.querySelectorAll(`[data-aue-prop="${propName}"]`);
-        nodes.forEach((n) => {
-          hideElement(n);
-          if (n.parentElement) hideElement(n.parentElement);
-          if (n.nextElementSibling) hideElement(n.nextElementSibling);
-        });
-      });
 
       const btnContainer = document.createElement('div');
       btnContainer.className = 'banner-buttons';
