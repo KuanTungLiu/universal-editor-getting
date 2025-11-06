@@ -58,7 +58,8 @@ export default function decorate(block) {
         subtitleHtml = clone.innerHTML;
       }
       const imgSrc = imageInWrapper ? imageInWrapper.getAttribute('src') : (data.image || '');
-      const buttonCountVal = buttonCountEl ? buttonCountEl.textContent.trim().toLowerCase() : (data.buttonCount || '').toLowerCase();
+  // Prefer parsed data value; fallback to any text content if present
+  const buttonCountVal = (data.buttonCount || (buttonCountEl ? buttonCountEl.textContent.trim() : '')).toLowerCase();
 
       [titleEl, subtitleEl, imageWrapper, buttonCountEl].forEach((el) => {
         if (el) el.style.display = 'none';
@@ -84,7 +85,7 @@ export default function decorate(block) {
         content.appendChild(s);
       }
 
-      // 按鈕欄位在 mainButtonSettings 和 subButtonSettings 容器內
+      // 按鈕欄位在 mainButtonSettings 和 subButtonSettings 容器內（有些情況容器不會渲染成 DOM，需支援平行欄位）
       const mainSettings = block.querySelector('[data-aue-prop="mainButtonSettings"]');
       const subSettings = block.querySelector('[data-aue-prop="subButtonSettings"]');
 
@@ -93,26 +94,64 @@ export default function decorate(block) {
       let subTextEl = null;
       let subLinkEl = null;
 
+      // Prefer fields inside containers if they exist
       if (mainSettings) {
         mainTextEl = mainSettings.querySelector('[data-aue-prop="mainButtonText"]');
-        const mainLinkWrapper = mainSettings.querySelector('[data-aue-prop="mainButtonLink"]');
+        let mainLinkWrapper = mainSettings.querySelector('[data-aue-prop="mainButtonLink"]');
+        if (!mainLinkWrapper) mainLinkWrapper = mainSettings;
         if (mainLinkWrapper) {
-          mainLinkEl = mainLinkWrapper.querySelector('a');
+          // If wrapper is an anchor itself or contains one
+          if (mainLinkWrapper.tagName === 'A' && mainLinkWrapper.hasAttribute('href')) {
+            mainLinkEl = mainLinkWrapper;
+          } else {
+            mainLinkEl = mainLinkWrapper.querySelector('a[href]');
+          }
         }
       }
 
       if (subSettings) {
         subTextEl = subSettings.querySelector('[data-aue-prop="subButtonText"]');
-        const subLinkWrapper = subSettings.querySelector('[data-aue-prop="subButtonLink"]');
+        let subLinkWrapper = subSettings.querySelector('[data-aue-prop="subButtonLink"]');
+        if (!subLinkWrapper) subLinkWrapper = subSettings;
         if (subLinkWrapper) {
-          subLinkEl = subLinkWrapper.querySelector('a');
+          if (subLinkWrapper.tagName === 'A' && subLinkWrapper.hasAttribute('href')) {
+            subLinkEl = subLinkWrapper;
+          } else {
+            subLinkEl = subLinkWrapper.querySelector('a[href]');
+          }
         }
       }
 
-      const mainText = mainTextEl ? mainTextEl.textContent.trim() : '';
-      const subText = subTextEl ? subTextEl.textContent.trim() : '';
-      const mainHref = mainLinkEl ? mainLinkEl.getAttribute('href') : '#';
-      const subHref = subLinkEl ? subLinkEl.getAttribute('href') : '#';
+      // Fallback: query fields directly under the block if containers aren't present
+      if (!mainTextEl) mainTextEl = block.querySelector('[data-aue-prop="mainButtonText"]');
+      if (!subTextEl) subTextEl = block.querySelector('[data-aue-prop="subButtonText"]');
+
+      if (!mainLinkEl) {
+        let mainLinkWrapper = block.querySelector('[data-aue-prop="mainButtonLink"]');
+        if (mainLinkWrapper) {
+          if (mainLinkWrapper.tagName === 'A' && mainLinkWrapper.hasAttribute('href')) {
+            mainLinkEl = mainLinkWrapper;
+          } else {
+            mainLinkEl = mainLinkWrapper.querySelector('a[href]');
+          }
+        }
+      }
+
+      if (!subLinkEl) {
+        let subLinkWrapper = block.querySelector('[data-aue-prop="subButtonLink"]');
+        if (subLinkWrapper) {
+          if (subLinkWrapper.tagName === 'A' && subLinkWrapper.hasAttribute('href')) {
+            subLinkEl = subLinkWrapper;
+          } else {
+            subLinkEl = subLinkWrapper.querySelector('a[href]');
+          }
+        }
+      }
+
+  const mainText = mainTextEl ? mainTextEl.textContent.trim() : (data.mainButtonText || '');
+  const subText = subTextEl ? subTextEl.textContent.trim() : (data.subButtonText || '');
+  const mainHref = (mainLinkEl && mainLinkEl.getAttribute('href')) || data.mainButtonLink || '#';
+  const subHref = (subLinkEl && subLinkEl.getAttribute('href')) || data.subButtonLink || '#';
 
       // Hide button-related fields in editor mode - use !important to ensure hiding
       const hideElement = (el) => {
@@ -125,10 +164,16 @@ export default function decorate(block) {
         });
       };
 
-      // Hide the entire mainButtonSettings and subButtonSettings containers
-      // This will hide all fields inside them (text and link)
+      // Hide authored UI: containers if present, or individual fields as fallback
       if (mainSettings) hideElement(mainSettings);
       if (subSettings) hideElement(subSettings);
+
+      [mainTextEl, subTextEl, mainLinkEl, subLinkEl].forEach((el) => {
+        if (!el) return;
+        hideElement(el);
+        if (el.parentElement) hideElement(el.parentElement);
+        if (el.nextElementSibling) hideElement(el.nextElementSibling);
+      });
 
       const btnContainer = document.createElement('div');
       btnContainer.className = 'banner-buttons';
