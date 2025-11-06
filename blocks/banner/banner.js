@@ -84,10 +84,30 @@ export default function decorate(block) {
         content.appendChild(s);
       }
 
-      const mainTextEl = block.querySelector('[data-aue-prop="mainButtonText"]');
-      const subTextEl = block.querySelector('[data-aue-prop="subButtonText"]');
-      const mainLinkEl = block.querySelector('[data-aue-prop="mainButtonLink"] a');
-      const subLinkEl = block.querySelector('[data-aue-prop="subButtonLink"] a');
+      // 按鈕欄位在 mainButtonSettings 和 subButtonSettings 容器內
+      const mainSettings = block.querySelector('[data-aue-prop="mainButtonSettings"]');
+      const subSettings = block.querySelector('[data-aue-prop="subButtonSettings"]');
+
+      let mainTextEl = null;
+      let mainLinkEl = null;
+      let subTextEl = null;
+      let subLinkEl = null;
+
+      if (mainSettings) {
+        mainTextEl = mainSettings.querySelector('[data-aue-prop="mainButtonText"]');
+        const mainLinkWrapper = mainSettings.querySelector('[data-aue-prop="mainButtonLink"]');
+        if (mainLinkWrapper) {
+          mainLinkEl = mainLinkWrapper.querySelector('a');
+        }
+      }
+
+      if (subSettings) {
+        subTextEl = subSettings.querySelector('[data-aue-prop="subButtonText"]');
+        const subLinkWrapper = subSettings.querySelector('[data-aue-prop="subButtonLink"]');
+        if (subLinkWrapper) {
+          subLinkEl = subLinkWrapper.querySelector('a');
+        }
+      }
 
       const mainText = mainTextEl ? mainTextEl.textContent.trim() : '';
       const subText = subTextEl ? subTextEl.textContent.trim() : '';
@@ -105,41 +125,8 @@ export default function decorate(block) {
         });
       };
 
-      // Hide text fields and their parents
-      if (mainTextEl) {
-        hideElement(mainTextEl);
-        hideElement(mainTextEl.parentElement);
-      }
-      if (subTextEl) {
-        hideElement(subTextEl);
-        hideElement(subTextEl.parentElement);
-      }
-
-      // Hide link containers and their parents
-      const mainLinkContainer = block.querySelector('[data-aue-prop="mainButtonLink"]');
-      const subLinkContainer = block.querySelector('[data-aue-prop="subButtonLink"]');
-
-      if (mainLinkContainer) {
-        hideElement(mainLinkContainer);
-        hideElement(mainLinkContainer.parentElement);
-        // Also hide next sibling if it exists (sometimes the actual content is in sibling)
-        if (mainLinkContainer.nextElementSibling) {
-          hideElement(mainLinkContainer.nextElementSibling);
-        }
-      }
-
-      if (subLinkContainer) {
-        hideElement(subLinkContainer);
-        hideElement(subLinkContainer.parentElement);
-        if (subLinkContainer.nextElementSibling) {
-          hideElement(subLinkContainer.nextElementSibling);
-        }
-      }
-
-      // Hide settings containers
-      const mainSettings = block.querySelector('[data-aue-prop="mainButtonSettings"]');
-      const subSettings = block.querySelector('[data-aue-prop="subButtonSettings"]');
-
+      // Hide the entire mainButtonSettings and subButtonSettings containers
+      // This will hide all fields inside them (text and link)
       if (mainSettings) hideElement(mainSettings);
       if (subSettings) hideElement(subSettings);
 
