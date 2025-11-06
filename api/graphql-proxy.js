@@ -1,9 +1,18 @@
 export default async function onRequest(context) {
-  // 改用一般 GraphQL endpoint（不是 persisted query）
-  const AEM_ENDPOINT = 'https://publish-p115457-e1250159.adobeaemcloud.com/content/cq:graphql/ktliu-testing/endpoint.gql';
+  // 試試看用公開的 GraphQL endpoint（不帶 cq:graphql）
+  const AEM_ENDPOINT = 'https://publish-p115457-e1250159.adobeaemcloud.com/graphql/endpoint.json';
+
+  // 如果上面不行，也可以試試這些：
+  // const AEM_ENDPOINT = 'https://publish-p115457-e1250159.adobeaemcloud.com/content/graphql/global/endpoint.json';
+  // const AEM_ENDPOINT = 'https://publish-p115457-e1250159.adobeaemcloud.com/content/_cq_graphql/ktliu-testing/endpoint.json';
 
   // 取得前端傳來的 request body
   const body = await context.request.text();
+
+  // eslint-disable-next-line no-console
+  console.log('🔄 Proxy forwarding to AEM:', AEM_ENDPOINT);
+  // eslint-disable-next-line no-console
+  console.log('📦 Request body:', body);
 
   try {
     // 轉發到 AEM
