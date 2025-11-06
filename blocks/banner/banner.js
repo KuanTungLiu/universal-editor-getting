@@ -175,6 +175,16 @@ export default function decorate(block) {
         if (el.nextElementSibling) hideElement(el.nextElementSibling);
       });
 
+      // Extra safety: hide any remaining authored fields for button props
+      ['mainButtonText', 'mainButtonLink', 'subButtonText', 'subButtonLink'].forEach((propName) => {
+        const nodes = block.querySelectorAll(`[data-aue-prop="${propName}"]`);
+        nodes.forEach((n) => {
+          hideElement(n);
+          if (n.parentElement) hideElement(n.parentElement);
+          if (n.nextElementSibling) hideElement(n.nextElementSibling);
+        });
+      });
+
       const btnContainer = document.createElement('div');
       btnContainer.className = 'banner-buttons';
 
