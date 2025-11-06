@@ -58,8 +58,8 @@ export default function decorate(block) {
         subtitleHtml = clone.innerHTML;
       }
       const imgSrc = imageInWrapper ? imageInWrapper.getAttribute('src') : (data.image || '');
-  // Prefer parsed data value; fallback to any text content if present
-  const buttonCountVal = (data.buttonCount || (buttonCountEl ? buttonCountEl.textContent.trim() : '')).toLowerCase();
+      // Prefer parsed data value; fallback to any text content if present
+      const buttonCountVal = (data.buttonCount || (buttonCountEl ? buttonCountEl.textContent.trim() : '')).toLowerCase();
 
       [titleEl, subtitleEl, imageWrapper, buttonCountEl].forEach((el) => {
         if (el) el.style.display = 'none';
@@ -127,7 +127,7 @@ export default function decorate(block) {
       if (!subTextEl) subTextEl = block.querySelector('[data-aue-prop="subButtonText"]');
 
       if (!mainLinkEl) {
-        let mainLinkWrapper = block.querySelector('[data-aue-prop="mainButtonLink"]');
+        const mainLinkWrapper = block.querySelector('[data-aue-prop="mainButtonLink"]');
         if (mainLinkWrapper) {
           if (mainLinkWrapper.tagName === 'A' && mainLinkWrapper.hasAttribute('href')) {
             mainLinkEl = mainLinkWrapper;
@@ -138,7 +138,7 @@ export default function decorate(block) {
       }
 
       if (!subLinkEl) {
-        let subLinkWrapper = block.querySelector('[data-aue-prop="subButtonLink"]');
+        const subLinkWrapper = block.querySelector('[data-aue-prop="subButtonLink"]');
         if (subLinkWrapper) {
           if (subLinkWrapper.tagName === 'A' && subLinkWrapper.hasAttribute('href')) {
             subLinkEl = subLinkWrapper;
@@ -148,10 +148,10 @@ export default function decorate(block) {
         }
       }
 
-  const mainText = mainTextEl ? mainTextEl.textContent.trim() : (data.mainButtonText || '');
-  const subText = subTextEl ? subTextEl.textContent.trim() : (data.subButtonText || '');
-  const mainHref = (mainLinkEl && mainLinkEl.getAttribute('href')) || data.mainButtonLink || '#';
-  const subHref = (subLinkEl && subLinkEl.getAttribute('href')) || data.subButtonLink || '#';
+      const mainText = mainTextEl ? mainTextEl.textContent.trim() : (data.mainButtonText || '');
+      const subText = subTextEl ? subTextEl.textContent.trim() : (data.subButtonText || '');
+      const mainHref = (mainLinkEl && mainLinkEl.getAttribute('href')) || data.mainButtonLink || '#';
+      const subHref = (subLinkEl && subLinkEl.getAttribute('href')) || data.subButtonLink || '#';
 
       // Hide button-related fields in editor mode - use !important to ensure hiding
       const hideElement = (el) => {
