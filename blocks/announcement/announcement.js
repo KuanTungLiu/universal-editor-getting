@@ -1,6 +1,9 @@
-/* 使用 GraphQL 取得公告列表，預設失敗時回退到 JCR JSON（可關閉） */
-// 使用本地 proxy 來繞過 CORS 問題
-const GQL_ENDPOINT = '/api/graphql-proxy';
+/* 使用 GraphQL 取得公告列表，優先使用 Persisted Query (GET) 避免 CORS/Dispatcher 擋下，
+   若 PQ 失敗才回退到原本的 JCR JSON 解析（不再使用 proxy）。
+*/
+const PQ_WORKSPACE = 'ktliu-testing';
+const PQ_NAME = 'Announcement'; // 你在 AEM 發佈的 Persisted Query 名稱
+const PQ_BASE = `/graphql/execute.json/${PQ_WORKSPACE}/${PQ_NAME}`;
 const ENABLE_JCR_FALLBACK = true;
 
 function extractCfPath(el) {
@@ -36,77 +39,55 @@ function extractCfPath(el) {
   return '';
 }
 
-/* GraphQL 版本：以 endpoint.graphql 呼叫 CubAnnouncementsByPath */
-async function fetchAnnouncementsGQL(cfPath, limit = 10) {
-  console.log('🔍 [GQL] 開始 fetch，路徑:', cfPath, '，limit:', limit);
-
-  const query = `
-    query CubAnnouncementsByPath($path: ID!, $limit: Int = 10) {
-      cubAnnouncementPaginated(
-        first: $limit
-        filter: {
-          _path: { _expressions: [{ value: $path, _operator: STARTS_WITH }] }
-        }
-      ) {
-        edges {
-          node {
-            _path
-            noticeTitle
-            noticeDate
-            noticeContent { html }
-          }
-        }
-      }
-    }
-  `;
-
-  const res = await fetch(GQL_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    credentials: 'same-origin',
-    body: JSON.stringify({
-      query,
-      variables: { path: cfPath, limit: Number(limit) },
-    }),
-  });
-
-  console.log('🔁 [GQL] HTTP 狀態:', res.status);
-  if (!res.ok) throw new Error(`GraphQL HTTP ${res.status}`);
-
-  const payload = await res.json();
-  if (payload.errors && payload.errors.length) {
-    throw new Error(payload.errors.map((e) => e.message).join('; '));
-  }
-
-  const edges = payload?.data?.cubAnnouncementPaginated?.edges || [];
-  const items = edges.map(({ node }) => {
-    const pathKey = '_path'; // eslint-disable-line no-underscore-dangle
+function mapEdgesToItems(edges = []) {
+  return edges.map(({ node }) => {
+    const pathKey = '_path';
     return {
-      path: node[pathKey] || '',
-      title: node.noticeTitle || '',
-      date: node.noticeDate || '',
-      excerpt: node.noticeContent?.html || '',
+      path: (node && node[pathKey]) || '',
+      title: (node && node.noticeTitle) || '',
+      date: (node && node.noticeDate) || '',
+      excerpt: (node && node.noticeContent && node.noticeContent.html) || '',
     };
   });
+}
 
-  // 過濾未來日期、日期新到舊排序（沿用原本行為）
+function filterAndSortAnnouncements(items = []) {
   const now = new Date();
   const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const announcements = items
+  return items
     .filter((item) => {
-      if (!item.title) return false;
+      if (!item || !item.title) return false;
       if (!item.date) return true;
       const d = new Date(item.date);
       const dOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
       return dOnly <= todayOnly;
     })
     .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+}
 
-  console.log('✅ [GQL] 解析出', announcements.length, '個公告');
-  return announcements;
+/* 優先使用 Persisted Query (GET) */
+async function fetchAnnouncementsPQ(cfPath, limit = 10) {
+  const url = `${PQ_BASE}?path=${encodeURIComponent(cfPath)}&limit=${encodeURIComponent(limit)}`;
+  // eslint-disable-next-line no-console
+  console.log('🔍 [PQ] 嘗試 GET:', url);
+  const res = await fetch(url, {
+    method: 'GET',
+    credentials: 'same-origin', // 若需跨域帶 cookie，改 'include' 並確保 CORS supportsCredentials=true
+    headers: { Accept: 'application/json' },
+  });
+  // eslint-disable-next-line no-console
+  console.log('🔁 [PQ] HTTP 狀態:', res.status);
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`[PQ] HTTP ${res.status}: ${text}`);
+  }
+  const payload = await res.json();
+  if (payload.errors && payload.errors.length) {
+    throw new Error(payload.errors.map((e) => e.message).join('; '));
+  }
+  const edges = payload?.data?.cubAnnouncementPaginated?.edges || [];
+  const items = mapEdgesToItems(edges);
+  return filterAndSortAnnouncements(items);
 }
 
 /* 原本的 JCR JSON 版本（保留做為回退用） */
@@ -339,7 +320,7 @@ function formatDate(dateString) {
 }
 
 export default async function decorate(block) {
-  console.log('=== News Block 開始（GraphQL 版） ===');
+  console.log('=== News Block 開始（GraphQL PQ 優先，無 proxy） ===');
   console.log('📦 Block:', block);
 
   const data = {};
@@ -437,17 +418,19 @@ export default async function decorate(block) {
     return;
   }
 
-  console.log('🚀 開始以 GraphQL 取得公告...');
+  console.log('🚀 開始取得公告（PQ -> JCR 回退）...');
   let announcements;
   try {
-    announcements = await fetchAnnouncementsGQL(cfPath, parseInt(maxItems, 10));
-  } catch (e) {
-    console.error('❌ GraphQL 失敗：', e.message);
+    // 先嘗試 Persisted Query (GET)
+    announcements = await fetchAnnouncementsPQ(cfPath, parseInt(maxItems, 10));
+    console.log('✅ 使用 PQ 取得公告');
+  } catch (pqErr) {
+    console.warn('⚠️ PQ 失敗，原因:', pqErr.message);
     if (ENABLE_JCR_FALLBACK) {
       console.log('↩️ 啟動 JCR JSON 回退機制...');
       announcements = await fetchAnnouncementsJcr(cfPath);
     } else {
-      newsList.innerHTML = `<div class="error">讀取公告失敗：${e.message}</div>`;
+      newsList.innerHTML = `<div class="error">讀取公告失敗：${pqErr.message}</div>`;
       return;
     }
   }
@@ -489,5 +472,5 @@ export default async function decorate(block) {
     newsList.appendChild(item);
   });
 
-  console.log('=== News Block 完成（GraphQL 版） ===');
+  console.log('=== News Block 完成（GraphQL PQ 優先，無 proxy） ===');
 }
