@@ -89,6 +89,8 @@
             "component": "aem-content",
             "name": "mainButtonLink",
             "label": "Main Button Link / 主要按鈕連結",
+            "value": "",
+            "valueType":"string",
             "required": true
           }
         ]

@@ -63,22 +63,38 @@ export default function decorate(block) {
       if (subTextEl) subText = subTextEl.textContent.trim();
 
       // Get button links directly from DOM
-      let mainHref = '#';
-      let subHref = '#';
+      let mainHref = '';
+      let subHref = '';
 
       const mainLinkWrapper = block.querySelector('[data-aue-prop="mainButtonLink"]');
+      // eslint-disable-next-line no-console
+      console.log('mainLinkWrapper element:', mainLinkWrapper);
       if (mainLinkWrapper) {
+        // eslint-disable-next-line no-console
+        console.log('mainLinkWrapper innerHTML:', mainLinkWrapper.innerHTML);
         const a = mainLinkWrapper.querySelector('a[href]');
+        // eslint-disable-next-line no-console
+        console.log('Found anchor in mainLinkWrapper:', a);
         if (a) {
           mainHref = a.getAttribute('href');
+          // eslint-disable-next-line no-console
+          console.log('Extracted mainHref:', mainHref);
         }
       }
 
       const subLinkWrapper = block.querySelector('[data-aue-prop="subButtonLink"]');
+      // eslint-disable-next-line no-console
+      console.log('subLinkWrapper element:', subLinkWrapper);
       if (subLinkWrapper) {
+        // eslint-disable-next-line no-console
+        console.log('subLinkWrapper innerHTML:', subLinkWrapper.innerHTML);
         const a = subLinkWrapper.querySelector('a[href]');
+        // eslint-disable-next-line no-console
+        console.log('Found anchor in subLinkWrapper:', a);
         if (a) {
           subHref = a.getAttribute('href');
+          // eslint-disable-next-line no-console
+          console.log('Extracted subHref:', subHref);
         }
       }
 
@@ -146,11 +162,11 @@ export default function decorate(block) {
       };
 
       if (buttonCountVal === 'main-only' || buttonCountVal === 'main-and-sub') {
-        const mb = makeBtn(mainText || '重要公告', mainHref, 'primary');
+        const mb = makeBtn(mainText || '重要公告', mainHref || '#', 'primary');
         if (mb) btnContainer.appendChild(mb);
       }
       if (buttonCountVal === 'main-and-sub') {
-        const sb = makeBtn(subText || '新聞直播', subHref, 'secondary');
+        const sb = makeBtn(subText || '新聞直播', subHref || '#', 'secondary');
         if (sb) btnContainer.appendChild(sb);
       }
       if (btnContainer.children.length > 0) content.appendChild(btnContainer);
