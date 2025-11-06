@@ -84,6 +84,14 @@ export default function decorate(block) {
       const mainHref = mainLinkEl ? mainLinkEl.getAttribute('href') : '#';
       const subHref = subLinkEl ? subLinkEl.getAttribute('href') : '#';
 
+      // Hide button-related fields in editor mode
+      const mainButtonLinkWrapper = block.querySelector('[data-aue-prop="mainButtonLink"]');
+      const subButtonLinkWrapper = block.querySelector('[data-aue-prop="subButtonLink"]');
+
+      [mainTextEl, subTextEl, mainButtonLinkWrapper, subButtonLinkWrapper].forEach((el) => {
+        if (el) el.style.display = 'none';
+      });
+
       const btnContainer = document.createElement('div');
       btnContainer.className = 'banner-buttons';
 
