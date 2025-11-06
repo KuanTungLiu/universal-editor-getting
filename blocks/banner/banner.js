@@ -123,7 +123,7 @@ export default function decorate(block) {
 
       const mainText = mainTextEl ? mainTextEl.textContent.trim() : (data.mainButtonText || '');
       const subText = subTextEl ? subTextEl.textContent.trim() : (data.subButtonText || '');
-      const mainHref = (mainLinkEl && mainLinkEl.getAttribute('href')) || data.mainButtonLink || '#';
+      const mainHref = (mainLinkEl && mainLinkEl.getAttribute('href')) || data.mainButtonLink || '';
       const subHref = (subLinkEl && subLinkEl.getAttribute('href')) || data.subButtonLink || '#';
 
       // Hide button-related fields in editor mode - use !important to ensure hiding
@@ -192,6 +192,8 @@ export default function decorate(block) {
         container.appendChild(img);
       }
 
+      // Clear block and replace with preview container
+      block.innerHTML = '';
       block.appendChild(container);
       return;
     }
