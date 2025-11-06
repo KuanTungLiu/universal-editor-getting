@@ -87,28 +87,19 @@ export default function decorate(block) {
       // Prefer fields inside containers if they exist
       if (mainSettings) {
         mainTextEl = mainSettings.querySelector('[data-aue-prop="mainButtonText"]');
-        let mainLinkWrapper = mainSettings.querySelector('[data-aue-prop="mainButtonLink"]');
-        if (!mainLinkWrapper) mainLinkWrapper = mainSettings;
+        const mainLinkWrapper = mainSettings.querySelector('[data-aue-prop="mainButtonLink"]');
         if (mainLinkWrapper) {
-          // If wrapper is an anchor itself or contains one
-          if (mainLinkWrapper.tagName === 'A' && mainLinkWrapper.hasAttribute('href')) {
-            mainLinkEl = mainLinkWrapper;
-          } else {
-            mainLinkEl = mainLinkWrapper.querySelector('a[href]');
-          }
+          // Query deeply to find the anchor (might be nested in multiple divs)
+          mainLinkEl = mainLinkWrapper.querySelector('a[href]') || (mainLinkWrapper.tagName === 'A' ? mainLinkWrapper : null);
         }
       }
 
       if (subSettings) {
         subTextEl = subSettings.querySelector('[data-aue-prop="subButtonText"]');
-        let subLinkWrapper = subSettings.querySelector('[data-aue-prop="subButtonLink"]');
-        if (!subLinkWrapper) subLinkWrapper = subSettings;
+        const subLinkWrapper = subSettings.querySelector('[data-aue-prop="subButtonLink"]');
         if (subLinkWrapper) {
-          if (subLinkWrapper.tagName === 'A' && subLinkWrapper.hasAttribute('href')) {
-            subLinkEl = subLinkWrapper;
-          } else {
-            subLinkEl = subLinkWrapper.querySelector('a[href]');
-          }
+          // Query deeply to find the anchor (might be nested in multiple divs)
+          subLinkEl = subLinkWrapper.querySelector('a[href]') || (subLinkWrapper.tagName === 'A' ? subLinkWrapper : null);
         }
       }
 
@@ -119,22 +110,14 @@ export default function decorate(block) {
       if (!mainLinkEl) {
         const mainLinkWrapper = block.querySelector('[data-aue-prop="mainButtonLink"]');
         if (mainLinkWrapper) {
-          if (mainLinkWrapper.tagName === 'A' && mainLinkWrapper.hasAttribute('href')) {
-            mainLinkEl = mainLinkWrapper;
-          } else {
-            mainLinkEl = mainLinkWrapper.querySelector('a[href]');
-          }
+          mainLinkEl = mainLinkWrapper.querySelector('a[href]') || (mainLinkWrapper.tagName === 'A' ? mainLinkWrapper : null);
         }
       }
 
       if (!subLinkEl) {
         const subLinkWrapper = block.querySelector('[data-aue-prop="subButtonLink"]');
         if (subLinkWrapper) {
-          if (subLinkWrapper.tagName === 'A' && subLinkWrapper.hasAttribute('href')) {
-            subLinkEl = subLinkWrapper;
-          } else {
-            subLinkEl = subLinkWrapper.querySelector('a[href]');
-          }
+          subLinkEl = subLinkWrapper.querySelector('a[href]') || (subLinkWrapper.tagName === 'A' ? subLinkWrapper : null);
         }
       }
 
