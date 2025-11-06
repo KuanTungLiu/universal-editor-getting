@@ -18,16 +18,18 @@ export default function decorate(block) {
         return;
       }
 
-      // Check for link
+      // Check for link - search all descendants recursively
       const a = el.querySelector('a[href]');
       if (a) {
         data[fullKey] = a.getAttribute('href');
         return;
       }
 
-      // Text content
+      // Text content (trim empty strings)
       const text = el.textContent.trim();
-      data[fullKey] = text;
+      if (text) {
+        data[fullKey] = text;
+      }
     });
 
     // Editor mode: build a non-destructive preview with proper layout
@@ -127,6 +129,8 @@ export default function decorate(block) {
       const subHref = (subLinkEl && subLinkEl.getAttribute('href')) || data.subButtonLink || '#';
 
       // Debug: log parsed values
+      // eslint-disable-next-line no-console
+      console.log('Banner editor mode - all data:', data);
       // eslint-disable-next-line no-console
       console.log('Banner editor mode - button links:', {
         mainHref, subHref, dataMainLink: data.mainButtonLink, dataSubLink: data.subButtonLink,
