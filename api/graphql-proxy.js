@@ -57,11 +57,11 @@ export default async function onRequest(context) {
       const errorText = await response.text();
       lastError = `HTTP ${response.status}: ${errorText}`;
       // eslint-disable-next-line no-console
-      console.log(`  ⚠️ Failed:`, lastError);
+      console.log('  ⚠️ Failed:', lastError);
     } catch (error) {
       lastError = error.message;
       // eslint-disable-next-line no-console
-      console.log(`  ⚠️ Error:`, error.message);
+      console.log('  ⚠️ Error:', error.message);
     }
   }
 
