@@ -1,5 +1,5 @@
 /* 使用 GraphQL 取得公告列表，預設失敗時回退到 JCR JSON（可關閉） */
-const GQL_ENDPOINT = 'https://author-p115457-e1250159.adobeaemcloud.com/graphql/execute.json/ktliu-testing/Announcement;path=';
+const GQL_ENDPOINT = '/content/cq:graphql/ktliu-testing/endpoint';
 const ENABLE_JCR_FALLBACK = true;
 
 function extractCfPath(el) {
