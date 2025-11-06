@@ -1,5 +1,5 @@
 mountpoints:
   /:
-    url: "https://author-p115457-e1250159.adobeaemcloud.com/bin/franklin.delivery/KuanTungLiu/universal-editor-getting/main"
+    url: "https://publish-p115457-e1250159.adobeaemcloud.com/bin/franklin.delivery/KuanTungLiu/universal-editor-getting/main"
     type: "markup"
     suffix: ".html"
