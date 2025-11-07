@@ -1,6 +1,6 @@
 /* 使用 GraphQL 取得公告列表，預設失敗時回退到 JCR JSON（可關閉） */
 // 使用相對路徑，這樣在 Author 會呼叫 Author，在 Publish 會呼叫 Publish，避免 CORS 問題
-const GQL_ENDPOINT = '/graphql/execute.json/ktliu-testing/Announcement';
+const GQL_ENDPOINT = '/graphql/execute.json/ktliu-testing/Announcement;path=/content/dam/ktliu-testing/announcement/test-001';
 const ENABLE_JCR_FALLBACK = true;
 
 function extractCfPath(el) {
