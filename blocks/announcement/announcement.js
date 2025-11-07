@@ -66,7 +66,7 @@ async function fetchAnnouncementsGQL(cfPath, limit = 10) {
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
-    credentials: 'same-origin',
+    credentials: 'include',
     body: JSON.stringify({
       query,
       variables: { path: cfPath, limit: Number(limit) },
