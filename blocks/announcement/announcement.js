@@ -37,23 +37,20 @@ function extractCfPath(el) {
 }
 
 /* GraphQL 版本：以 endpoint.graphql 呼叫 CubAnnouncementsByPath */
-async function fetchAnnouncementsGQL(cfPath = '', limit = 10) {
-  console.log('🔍 [GQL] 開始 fetch，路徑:', cfPath || '(全部公告)', '，limit:', limit);
+async function fetchAnnouncementsGQL(cfFolderPath, limit = 10) {
+  if (!cfFolderPath) throw new Error('cfFolderPath 未設定');
 
-  // 如果 cfPath 有值，就加 filter，否則抓全部
-  const filterPart = cfPath
-    ? `
-      filter: {
-        _path: { _expressions: [{ value: "${cfPath}", _operator: STARTS_WITH }] }
-      }
-    `
-    : '';
+  console.log('🔍 [GQL] 開始 fetch，資料夾路徑:', cfFolderPath, '，limit:', limit);
 
+  // 確保 path 以 / 開頭
+  const normalizedPath = cfFolderPath.startsWith('/') ? cfFolderPath : `/${cfFolderPath}`;
+
+  // GraphQL query
   const query = `
-    query CubAnnouncementsByPath($limit: Int = 10) {
+    query CubAnnouncementsByPath($path: ID!, $limit: Int = 10) {
       cubAnnouncementPaginated(
         first: $limit
-        ${filterPart}
+        filter: { _path: { _expressions: [{ value: $path, _operator: STARTS_WITH }] } }
       ) {
         edges {
           node {
@@ -67,16 +64,20 @@ async function fetchAnnouncementsGQL(cfPath = '', limit = 10) {
     }
   `;
 
-  const variables = { limit: Number(limit) };
+  // 注意：AEM Cloud 要加 ;path=，fetch 會自動處理
+  const endpointWithPath = `${GQL_ENDPOINT};path=${encodeURIComponent(normalizedPath)}`;
 
-  const res = await fetch(GQL_ENDPOINT, {
+  const res = await fetch(endpointWithPath, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
-    credentials: 'include',
-    body: JSON.stringify({ query, variables }),
+    credentials: 'include', // 保留 session
+    body: JSON.stringify({
+      query,
+      variables: { path: normalizedPath, limit: Number(limit) },
+    }),
   });
 
   console.log('🔁 [GQL] HTTP 狀態:', res.status);
@@ -88,28 +89,20 @@ async function fetchAnnouncementsGQL(cfPath = '', limit = 10) {
   }
 
   const edges = payload?.data?.cubAnnouncementPaginated?.edges || [];
-  const items = edges.map(({
-    node: {
-      _path: path, noticeTitle, noticeDate, noticeContent,
-    },
-  }) => ({
-    path: path || '',
-    title: noticeTitle || '',
-    date: noticeDate || '',
-    excerpt: noticeContent?.html || '',
+  const PATH_PROP = '_path'; // 以常數保存欄位名稱，避免直接存取 node._path
+  const items = edges.map(({ node }) => ({
+    path: node[PATH_PROP] || node.path || '',
+    title: node.noticeTitle || '',
+    date: node.noticeDate || '',
+    excerpt: node.noticeContent?.html || '',
   }));
 
   // 過濾未來日期、日期新到舊排序
-  const now = new Date();
-  const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const today = new Date();
+  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
   const announcements = items
-    .filter((item) => {
-      if (!item.title) return false;
-      if (!item.date) return true;
-      const d = new Date(item.date);
-      const dOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-      return dOnly <= todayOnly;
-    })
+    .filter((item) => item.title && (!item.date || new Date(item.date) <= todayOnly))
     .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
   console.log('✅ [GQL] 解析出', announcements.length, '個公告');
