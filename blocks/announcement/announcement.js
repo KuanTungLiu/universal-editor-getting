@@ -1,12 +1,5 @@
-/* announcement.js
-   優化 Persisted Query 的呼叫：處理已編碼路徑、
-   嘗試不同 query-string 變體（encodeURIComponent / encodeURI / variables JSON）
-   以降低 AEM GraphQL 在接收 path 變數時出現 "coerced Null" 的機率。
-   若 PQ 都失敗則回退到原本 JCR JSON 解析（ENABLE_JCR_FALLBACK 控制）。
-*/
-const PQ_WORKSPACE = 'ktliu-testing';
-const PQ_NAME = 'Announcement'; // 你在 AEM 發佈的 Persisted Query 名稱
-const PQ_BASE = `/graphql/execute.json/${PQ_WORKSPACE}/${PQ_NAME}`;
+/* 使用 GraphQL 取得公告列表，預設失敗時回退到 JCR JSON（可關閉） */
+const GQL_ENDPOINT = 'https://publish-p115457-e1250159.adobeaemcloud.com/graphql/execute.json/ktliu-testing/Announcement';
 const ENABLE_JCR_FALLBACK = true;
 
 function extractCfPath(el) {
@@ -42,144 +35,77 @@ function extractCfPath(el) {
   return '';
 }
 
-function mapEdgesToItems(edges = []) {
-  return edges.map(({ node }) => {
-    const pathKey = '_path';
+/* GraphQL 版本：以 endpoint.graphql 呼叫 CubAnnouncementsByPath */
+async function fetchAnnouncementsGQL(cfPath, limit = 10) {
+  console.log('🔍 [GQL] 開始 fetch，路徑:', cfPath, '，limit:', limit);
+
+  const query = `
+    query CubAnnouncementsByPath($path: ID!, $limit: Int = 10) {
+      cubAnnouncementPaginated(
+        first: $limit
+        filter: {
+          _path: { _expressions: [{ value: $path, _operator: STARTS_WITH }] }
+        }
+      ) {
+        edges {
+          node {
+            _path
+            noticeTitle
+            noticeDate
+            noticeContent { html }
+          }
+        }
+      }
+    }
+  `;
+
+  const res = await fetch(GQL_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify({
+      query,
+      variables: { path: cfPath, limit: Number(limit) },
+    }),
+  });
+
+  console.log('🔁 [GQL] HTTP 狀態:', res.status);
+  if (!res.ok) throw new Error(`GraphQL HTTP ${res.status}`);
+
+  const payload = await res.json();
+  if (payload.errors && payload.errors.length) {
+    throw new Error(payload.errors.map((e) => e.message).join('; '));
+  }
+
+  const edges = payload?.data?.cubAnnouncementPaginated?.edges || [];
+  const items = edges.map(({ node }) => {
+    const pathKey = '_path'; // eslint-disable-line no-underscore-dangle
     return {
-      path: (node && node[pathKey]) || '',
-      title: (node && node.noticeTitle) || '',
-      date: (node && node.noticeDate) || '',
-      excerpt: (node && node.noticeContent && node.noticeContent.html) || '',
+      path: node[pathKey] || '',
+      title: node.noticeTitle || '',
+      date: node.noticeDate || '',
+      excerpt: node.noticeContent?.html || '',
     };
   });
-}
 
-function filterAndSortAnnouncements(items = []) {
+  // 過濾未來日期、日期新到舊排序（沿用原本行為）
   const now = new Date();
   const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return items
+  const announcements = items
     .filter((item) => {
-      if (!item || !item.title) return false;
+      if (!item.title) return false;
       if (!item.date) return true;
       const d = new Date(item.date);
       const dOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
       return dOnly <= todayOnly;
     })
     .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-}
 
-/* 對輸入路徑做「安全解碼」：
-   - 若 cfPath 已包含 %xx 編碼（例如來自 data 屬性），先 decodeURIComponent 一次，
-     以避免後續 encode 再產生 %25（雙重編碼）。
-   - 回傳 decoded string（不做 encode，encoding 在建立 URL 時決定使用哪個方法）。
-*/
-function ensureDecodedCfPath(cfPath) {
-  if (!cfPath) return '';
-  try {
-    // 如果偵測到 %xx，先 decode
-    if (/%[0-9A-Fa-f]{2}/.test(cfPath)) {
-      return decodeURIComponent(cfPath);
-    }
-    return cfPath;
-  } catch (e) {
-    // 若 decode 失敗，回傳原始
-    return cfPath;
-  }
-}
-
-/* 優先使用 Persisted Query (GET)
-   嘗試三種變體（順序）：
-   1) path=encodeURIComponent(decodedPath)        （最常見）
-   2) path=encodeURI(decodedPath)                 （保留 slash 不編碼，應付某些執行環境）
-   3) variables=<JSON encoded>                     （把變數放在 variables 參數內）
-   若任一變體回傳沒有 errors，立即回傳資料；否則收集錯誤並一併回傳。
-*/
-async function fetchAnnouncementsPQ(cfPath, limit = 10) {
-  const decodedPath = ensureDecodedCfPath(cfPath);
-  const attempts = [];
-
-  // 1) encodeURIComponent (最保守)
-  attempts.push({
-    desc: 'encodeURIComponent(path)',
-    url: `${PQ_BASE}?path=${encodeURIComponent(decodedPath)}&limit=${encodeURIComponent(limit)}`,
-  });
-
-  // 2) encodeURI (保留 slash)
-  attempts.push({
-    desc: 'encodeURI(path) (slashes preserved)',
-    url: `${PQ_BASE}?path=${encodeURI(decodedPath)}&limit=${encodeURIComponent(limit)}`,
-  });
-
-  // 3) variables JSON
-  const variablesJson = encodeURIComponent(
-    JSON.stringify({ path: decodedPath, limit: Number(limit) }),
-  );
-  attempts.push({
-    desc: 'variables JSON (variables={"path":"/content/..."})',
-    url: `${PQ_BASE}?variables=${variablesJson}`,
-  });
-
-  // 依序嘗試
-  const errors = [];
-  for (let i = 0; i < attempts.length; i += 1) {
-    const { desc, url } = attempts[i];
-    // eslint-disable-next-line no-console
-    console.log(`🔍 [PQ] 嘗試 (#${i + 1}) ${desc}:`, url);
-    try {
-      // eslint-disable-next-line no-await-in-loop
-      const res = await fetch(url, {
-        method: 'GET',
-        credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
-      });
-      // eslint-disable-next-line no-console
-      console.log(`🔁 [PQ] (#${i + 1}) HTTP 狀態:`, res.status);
-      // eslint-disable-next-line no-await-in-loop
-      const text = await res.text();
-      let payload;
-      try {
-        payload = text ? JSON.parse(text) : {};
-      } catch (e) {
-        // 無法 parse 為 JSON，記錄並繼續下一種嘗試
-        errors.push({
-          attempt: i + 1, desc, status: res.status, body: text, parseError: e.message,
-        });
-        // eslint-disable-next-line no-console
-        console.warn(`[PQ] (#${i + 1}) 無法解析回應為 JSON:`, e.message, '\n回傳內容:', text);
-        // eslint-disable-next-line no-continue
-        continue;
-      }
-
-      if (payload.errors && payload.errors.length) {
-        // GraphQL 層級的 errors，記錄並嘗試下一種方式
-        errors.push({
-          attempt: i + 1, desc, status: res.status, graphqlErrors: payload.errors,
-        });
-        // eslint-disable-next-line no-console
-        console.warn(`[PQ] (#${i + 1}) GraphQL errors:`, payload.errors);
-        // eslint-disable-next-line no-continue
-        continue;
-      }
-
-      // 若 payload.data 有預期的欄位，解析並回傳
-      const edges = payload?.data?.cubAnnouncementPaginated?.edges || [];
-      const items = mapEdgesToItems(edges);
-      const filtered = filterAndSortAnnouncements(items);
-      // eslint-disable-next-line no-console
-      console.log(`✅ [PQ] (#${i + 1}) 成功解析出 ${filtered.length} 筆公告`);
-      return filtered;
-    } catch (err) {
-      errors.push({ attempt: i + 1, desc, error: err.message });
-      // eslint-disable-next-line no-console
-      console.warn(`[PQ] (#${i + 1}) fetch 失敗:`, err.message);
-      // 繼續下一次嘗試
-    }
-  }
-
-  // 若全部失敗，拋出包含所有嘗試結果的 Error（呼叫端會依 ENABLE_JCR_FALLBACK 決定回退）
-  const err = new Error('[PQ] 所有嘗試失敗，詳情請參考 pqAttempts 屬性');
-  err.pqAttempts = errors;
-  throw err;
+  console.log('✅ [GQL] 解析出', announcements.length, '個公告');
+  return announcements;
 }
 
 /* 原本的 JCR JSON 版本（保留做為回退用） */
@@ -412,7 +338,7 @@ function formatDate(dateString) {
 }
 
 export default async function decorate(block) {
-  console.log('=== News Block 開始（GraphQL PQ 優先，無 proxy） ===');
+  console.log('=== News Block 開始（GraphQL 版） ===');
   console.log('📦 Block:', block);
 
   const data = {};
@@ -510,24 +436,21 @@ export default async function decorate(block) {
     return;
   }
 
-  console.log('🚀 開始取得公告（PQ -> JCR 回退）...');
+  console.log('🚀 開始以 GraphQL 取得公告...');
   let announcements;
   try {
-    // 先嘗試 Persisted Query (GET)
-    announcements = await fetchAnnouncementsPQ(cfPath, parseInt(maxItems, 10));
-    console.log('✅ 使用 PQ 取得公告');
-  } catch (pqErr) {
-    console.warn('⚠️ PQ 失敗，原因:', pqErr.message, pqErr.pqAttempts || '');
+    announcements = await fetchAnnouncementsGQL(cfPath, parseInt(maxItems, 10));
+  } catch (e) {
+    console.error('❌ GraphQL 失敗：', e.message);
     if (ENABLE_JCR_FALLBACK) {
       console.log('↩️ 啟動 JCR JSON 回退機制...');
       announcements = await fetchAnnouncementsJcr(cfPath);
     } else {
-      newsList.innerHTML = `<div class="error">讀取公告失敗：${pqErr.message}</div>`;
+      newsList.innerHTML = `<div class="error">讀取公告失敗：${e.message}</div>`;
       return;
     }
   }
 
-  // eslint-disable-next-line no-console
   console.log('📬 取得結果:', announcements);
 
   newsList.innerHTML = '';
@@ -564,4 +487,6 @@ export default async function decorate(block) {
 
     newsList.appendChild(item);
   });
+
+  console.log('=== News Block 完成（GraphQL 版） ===');
 }
