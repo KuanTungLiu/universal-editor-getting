@@ -1,418 +1,101 @@
-export default function decorate(block) {
-  const isEditor = block.hasAttribute('data-aue-resource');
+// 預設值配置
+const DEFAULT_VALUES = {
+  buttonCount: 'main-and-sub',
+  subtitle: '時時掌握交易資訊，絕不漏接重要新聞，大事小事通通報你知！',
+  mainButtonText: '重要公告',
+  subButtonText: '新聞直播',
+  mainButtonLink: '#',
+  subButtonLink: '#',
+};
 
-  const norm = (v) => (typeof v === 'string' ? v.trim() : v);
+// 🔧 工具函數：提取 AEM 內容路徑
+function extractContentPath(el) {
+  if (!el) return '';
 
-  // Extract AEM content path from aem-content component
-  const extractContentPath = (el) => {
-    if (!el) return '';
-    const link = el.querySelector && el.querySelector('a');
-    const candidates = [];
-    if (link) {
-      candidates.push(link.getAttribute('href'));
-      candidates.push(link.href);
-      if (link.dataset) candidates.push(link.dataset.value, link.dataset.href);
-      candidates.push(link.getAttribute('data-value'));
-      candidates.push(link.getAttribute('data-href'));
-      candidates.push(link.textContent && link.textContent.trim());
-    }
-    if (el.dataset) candidates.push(el.dataset.value, el.dataset.href);
-    candidates.push(el.getAttribute && el.getAttribute('data-value'));
-    candidates.push(el.getAttribute && el.getAttribute('data-href'));
-    candidates.push(el.textContent && el.textContent.trim());
+  const link = el.querySelector?.('a');
+  const candidates = [
+    link?.getAttribute('href'),
+    link?.href,
+    link?.dataset?.value,
+    link?.dataset?.href,
+    link?.textContent?.trim(),
+    el.dataset?.value,
+    el.dataset?.href,
+    el.textContent?.trim(),
+  ];
 
-    const normalized = candidates
-      .filter(Boolean)
-      .map((v) => v.toString().trim());
+  const normalized = candidates.filter(Boolean).map((v) => v.toString().trim());
 
-    const direct = normalized.find((v) => v.startsWith('/content/'));
-    if (direct) return direct;
+  // 優先找直接以 /content/ 開頭的
+  const direct = normalized.find((v) => v.startsWith('/content/'));
+  if (direct) return direct;
 
-    for (let i = 0; i < normalized.length; i += 1) {
-      const v = normalized[i];
-      const idx = v.indexOf('/content/');
-      if (idx !== -1) return v.slice(idx).split(/[\s"']+/)[0];
-    }
-
-    return '';
-  };
-
-  const data = {};
-
-  // Parse data-aue-prop authored content
-  const props = block.querySelectorAll('[data-aue-prop]');
-  if (props.length > 0) {
-    props.forEach((el) => {
-      const fullKey = el.getAttribute('data-aue-prop');
-
-      // Check for image
-      const img = el.querySelector('img');
-      if (img && img.getAttribute('src')) {
-        data[fullKey] = img.getAttribute('src');
-        return;
-      }
-
-      // Check for link - search all descendants recursively
-      const a = el.querySelector('a[href]');
-      if (a) {
-        data[fullKey] = a.getAttribute('href');
-        return;
-      }
-
-      // Text content (trim empty strings)
-      const text = el.textContent.trim();
-      if (text) {
-        data[fullKey] = text;
-      }
-    });
-
-    // Editor mode: build a non-destructive preview with proper layout
-    if (isEditor) {
-      const titleEl = block.querySelector('[data-aue-prop="title"]');
-      const subtitleEl = block.querySelector('[data-aue-prop="subtitle"]');
-      const imageWrapper = block.querySelector('[data-aue-prop="image"]');
-      const buttonCountEl = block.querySelector('[data-aue-prop="buttonCount"]');
-
-      let imageInWrapper = null;
-      if (imageWrapper) {
-        if (imageWrapper.tagName === 'IMG') {
-          imageInWrapper = imageWrapper;
-        } else {
-          imageInWrapper = imageWrapper.querySelector('img');
-        }
-      }
-
-      // Extract values directly from DOM elements (don't rely on data object)
-      const titleText = titleEl ? titleEl.textContent.trim() : '';
-      const subtitleHtml = subtitleEl ? subtitleEl.innerHTML : '';
-      const imgSrc = imageInWrapper ? imageInWrapper.getAttribute('src') : '';
-      const buttonCountVal = buttonCountEl ? buttonCountEl.textContent.trim().toLowerCase() : 'none';
-
-      // Get button text directly from DOM
-      let mainText = '';
-      let subText = '';
-      const mainTextEl = block.querySelector('[data-aue-prop="mainButtonText"]');
-      const subTextEl = block.querySelector('[data-aue-prop="subButtonText"]');
-      if (mainTextEl) mainText = mainTextEl.textContent.trim();
-      if (subTextEl) subText = subTextEl.textContent.trim();
-
-      // Get button links directly from DOM (extract AEM content paths)
-      let mainHref = '';
-      let subHref = '';
-
-      const mainLinkWrapper = block.querySelector('[data-aue-prop="mainButtonLink"]');
-      // eslint-disable-next-line no-console
-      console.log('mainLinkWrapper element:', mainLinkWrapper);
-      if (mainLinkWrapper) {
-        // eslint-disable-next-line no-console
-        console.log('mainLinkWrapper innerHTML:', mainLinkWrapper.innerHTML);
-        // Use extractContentPath to get AEM content path
-        mainHref = extractContentPath(mainLinkWrapper);
-        // eslint-disable-next-line no-console
-        console.log('Extracted mainHref (content path):', mainHref);
-      }
-
-      const subLinkWrapper = block.querySelector('[data-aue-prop="subButtonLink"]');
-      // eslint-disable-next-line no-console
-      console.log('subLinkWrapper element:', subLinkWrapper);
-      if (subLinkWrapper) {
-        // eslint-disable-next-line no-console
-        console.log('subLinkWrapper innerHTML:', subLinkWrapper.innerHTML);
-        // Use extractContentPath to get AEM content path
-        subHref = extractContentPath(subLinkWrapper);
-        // eslint-disable-next-line no-console
-        console.log('Extracted subHref (content path):', subHref);
-      }
-
-      // Debug: log parsed values
-      // eslint-disable-next-line no-console
-      console.log('Banner editor mode - extracted values:', {
-        titleText, mainText, subText, mainHref, subHref, buttonCountVal,
-      });
-
-      // Hide button field wrappers to prevent them from displaying
-      const hideElement = (el) => {
-        if (!el) return;
-        el.style.setProperty('display', 'none', 'important');
-        const children = el.querySelectorAll('*');
-        children.forEach((child) => {
-          child.style.setProperty('display', 'none', 'important');
-        });
-      };
-
-      // Hide all button-related authored fields
-      [mainLinkWrapper, subLinkWrapper, mainTextEl, subTextEl].forEach((el) => {
-        if (el) {
-          hideElement(el);
-          if (el.parentElement) hideElement(el.parentElement);
-        }
-      });
-
-      [titleEl, subtitleEl, imageWrapper, buttonCountEl].forEach((el) => {
-        if (el) el.style.display = 'none';
-      });
-
-      const container = document.createElement('div');
-      container.className = 'banner-container';
-
-      const content = document.createElement('div');
-      content.className = 'banner-content';
-
-      if (titleText) {
-        const t = document.createElement('h1');
-        t.className = 'banner-title';
-        t.textContent = titleText;
-        content.appendChild(t);
-      }
-
-      if (subtitleHtml) {
-        const s = document.createElement('div');
-        s.className = 'banner-subtitle';
-        s.innerHTML = subtitleHtml;
-        content.appendChild(s);
-      }
-
-      const btnContainer = document.createElement('div');
-      btnContainer.className = 'banner-buttons';
-
-      const makeBtn = (txt, href, type) => {
-        if (!txt) return null;
-        const wrap = document.createElement('div');
-        wrap.className = 'button-wrapper';
-        const a = document.createElement('a');
-        a.className = `button ${type}`;
-        a.href = href || '#';
-        a.textContent = txt;
-        wrap.appendChild(a);
-        return wrap;
-      };
-
-      if (buttonCountVal === 'main-only' || buttonCountVal === 'main-and-sub') {
-        const mb = makeBtn(mainText || '重要公告', mainHref || '#', 'primary');
-        if (mb) btnContainer.appendChild(mb);
-      }
-      if (buttonCountVal === 'main-and-sub') {
-        const sb = makeBtn(subText || '新聞直播', subHref || '#', 'secondary');
-        if (sb) btnContainer.appendChild(sb);
-      }
-      if (btnContainer.children.length > 0) content.appendChild(btnContainer);
-
-      container.appendChild(content);
-      if (imgSrc) {
-        const img = document.createElement('img');
-        img.src = imgSrc;
-        img.alt = data.imageAlt || '';
-        img.className = 'banner-image';
-        container.appendChild(img);
-      }
-
-      // Clear block and replace with preview container
-      block.innerHTML = '';
-      block.appendChild(container);
-      return;
-    }
-  } else {
-    // ====== 根據實際 HTML 結構解析 ======
-    const rows = [...block.children];
-
-    if (rows.length >= 1 && rows[0].children[0]) {
-      // 第1行：title
-      const titleCell = rows[0].children[0];
-      const titleP = titleCell.querySelector('p');
-      if (titleP) {
-        data.title = titleP.textContent.trim();
-      }
-    }
-
-    if (rows.length >= 2 && rows[1].children[0]) {
-      // 第2行：subtitle
-      const subtitleCell = rows[1].children[0];
-      const subtitleP = subtitleCell.querySelector('p');
-      if (subtitleP) {
-        data.subtitle = subtitleP.textContent.trim();
-      }
-    }
-
-    if (rows.length >= 3 && rows[2].children[0]) {
-      // 第3行：image
-      const imageCell = rows[2].children[0];
-      const img = imageCell.querySelector('img');
-      if (img && img.getAttribute('src')) {
-        data.image = img.getAttribute('src');
-        data.imageAlt = img.getAttribute('alt') || '';
-      }
-    }
-
-    if (rows.length >= 4 && rows[3].children[0]) {
-      // 第4行：buttonCount
-      const buttonCountCell = rows[3].children[0];
-      const buttonCountP = buttonCountCell.querySelector('p');
-      if (buttonCountP) {
-        data.buttonCount = buttonCountP.textContent.trim();
-      }
-    }
-
-    if (rows.length >= 5 && rows[4].children[0]) {
-      // 第5行：mainButtonText
-      const mainTextCell = rows[4].children[0];
-      const mainTextP = mainTextCell.querySelector('p');
-      if (mainTextP) {
-        data.mainButtonText = mainTextP.textContent.trim();
-      }
-      const mainLink = mainTextCell.querySelector('a[href]');
-      if (mainLink) {
-        data.mainButtonLink = mainLink.getAttribute('href');
-        if (!data.mainButtonText) {
-          data.mainButtonText = mainLink.textContent.trim();
-        }
-      }
-    }
-
-    if (rows.length >= 6 && rows[5].children[0]) {
-      // 第6行：subButtonText
-      const subTextCell = rows[5].children[0];
-      const subTextP = subTextCell.querySelector('p');
-      if (subTextP) {
-        data.subButtonText = subTextP.textContent.trim();
-      }
-      const subLink = subTextCell.querySelector('a[href]');
-      if (subLink) {
-        data.subButtonLink = subLink.getAttribute('href');
-        if (!data.subButtonText) {
-          data.subButtonText = subLink.textContent.trim();
-        }
-      }
-    }
-
-    // ====== 🎯 新增：設定預設值 ======
-    // 如果 buttonCount 是空的，預設顯示兩個按鈕
-    if (!data.buttonCount) {
-      data.buttonCount = 'main-and-sub';
-    }
-
-    // 如果 subtitle 是空的，給預設文字
-    if (!data.subtitle) {
-      data.subtitle = '時時掌握交易資訊，絕不漏接重要新聞，大事小事通通報你知！';
-    }
-
-    // 如果按鈕文字是空的，給預設文字
-    if (!data.mainButtonText) {
-      data.mainButtonText = '重要公告';
-    }
-    if (!data.subButtonText) {
-      data.subButtonText = '新聞直播';
-    }
-
-    // 如果按鈕連結是空的，給預設連結
-    if (!data.mainButtonLink) {
-      data.mainButtonLink = '#';
-    }
-    if (!data.subButtonLink) {
-      data.subButtonLink = '#';
-    }
-    // parsed fallback data available in `data`
-    // Editor mode: enhance buttons in table mode
-    if (isEditor) {
-      rows.forEach((row) => {
-        if (!row.children[0]) return;
-        const cell = row.children[0];
-        const p = cell.querySelector('p');
-        if (p) {
-          const text = p.textContent.trim().toLowerCase();
-          // Check if this is a button row (for future enhancements)
-          if (text.includes('button') || text === 'main-and-sub' || text === 'main-only') {
-            // Button row detected - no additional processing needed in editor mode
-          }
-        }
-      });
-      return;
-    }
+  // 從文字中間找
+  const found = normalized.find((v) => v.indexOf('/content/') !== -1);
+  if (found) {
+    const idx = found.indexOf('/content/');
+    return found.slice(idx).split(/[\s"']+/)[0];
   }
 
-  // Runtime render: build DOM from parsed data
-  // build banner from parsed `data`
+  return '';
+}
 
-  block.innerHTML = '';
-
+// 🎨 共用渲染函數
+function renderBanner(data) {
   const container = document.createElement('div');
   container.className = 'banner-container';
 
   const content = document.createElement('div');
   content.className = 'banner-content';
 
-  // Prepare image
-  let imgEl;
-  if (data.image) {
-    imgEl = document.createElement('img');
-    imgEl.src = data.image;
-    imgEl.alt = data.imageAlt || '';
-    imgEl.className = 'banner-image';
-  }
-
-  // Add title
+  // 標題
   if (data.title) {
-    const titleEl = document.createElement('h1');
-    titleEl.className = 'banner-title';
-    titleEl.textContent = norm(data.title);
-    content.appendChild(titleEl);
+    const title = document.createElement('h1');
+    title.className = 'banner-title';
+    title.textContent = data.title;
+    content.appendChild(title);
   }
 
-  // Add subtitle
+  // 副標題
   if (data.subtitle) {
-    const subtitleEl = document.createElement('div');
-    subtitleEl.className = 'banner-subtitle';
-    subtitleEl.textContent = norm(data.subtitle);
-    content.appendChild(subtitleEl);
+    const subtitle = document.createElement('div');
+    subtitle.className = 'banner-subtitle';
+    // 如果有 HTML，用 innerHTML；否則用 textContent
+    if (data.subtitleHtml) {
+      subtitle.innerHTML = data.subtitleHtml;
+    } else {
+      subtitle.textContent = data.subtitle;
+    }
+    content.appendChild(subtitle);
   }
 
-  // Add buttons
-  const buttonCount = (data.buttonCount || '').toLowerCase().trim();
-  const hasMainText = !!(data.mainButtonText || '').trim();
-  const hasSubText = !!(data.subButtonText || '').trim();
-
-  // compute whether to render buttons based on provided values
-
-  let shouldShowButtons = false;
-  if (buttonCount === 'main-only' && hasMainText) shouldShowButtons = true;
-  if (buttonCount === 'main-and-sub' && (hasMainText || hasSubText)) {
-    shouldShowButtons = true;
-  }
-
-  if (shouldShowButtons) {
+  // 按鈕
+  const buttonCount = data.buttonCount?.toLowerCase() || 'none';
+  if (buttonCount !== 'none') {
     const btnContainer = document.createElement('div');
     btnContainer.className = 'banner-buttons';
 
-    const createBtn = (text, link, type = 'primary') => {
-      const t = norm(text);
-      const l = norm(link);
-      if (!t) return null;
-
+    const createBtn = (text, link, type) => {
+      if (!text) return null;
       const wrapper = document.createElement('div');
       wrapper.className = 'button-wrapper';
-
       const a = document.createElement('a');
       a.className = `button ${type}`;
-      a.href = l || '#';
-      a.textContent = t;
+      a.href = link || '#';
+      a.textContent = text;
       wrapper.appendChild(a);
       return wrapper;
     };
 
+    // 主按鈕
     if (buttonCount === 'main-only' || buttonCount === 'main-and-sub') {
-      const mainBtn = createBtn(
-        data.mainButtonText,
-        data.mainButtonLink,
-        'primary',
-      );
+      const mainBtn = createBtn(data.mainButtonText, data.mainButtonLink, 'primary');
       if (mainBtn) btnContainer.appendChild(mainBtn);
     }
 
+    // 次按鈕
     if (buttonCount === 'main-and-sub') {
-      const subBtn = createBtn(
-        data.subButtonText,
-        data.subButtonLink,
-        'secondary',
-      );
+      const subBtn = createBtn(data.subButtonText, data.subButtonLink, 'secondary');
       if (subBtn) btnContainer.appendChild(subBtn);
     }
 
@@ -422,6 +105,160 @@ export default function decorate(block) {
   }
 
   container.appendChild(content);
-  if (imgEl) container.appendChild(imgEl);
-  block.appendChild(container);
+
+  // 圖片
+  if (data.image) {
+    const img = document.createElement('img');
+    img.src = data.image;
+    img.alt = data.imageAlt || data.title || '';
+    img.className = 'banner-image';
+    container.appendChild(img);
+  }
+
+  return container;
+}
+
+// 🎨 編輯器模式：解析並渲染
+function handleEditorMode(block) {
+  // 取得所有欄位元素
+  const titleEl = block.querySelector('[data-aue-prop="title"]');
+  const subtitleEl = block.querySelector('[data-aue-prop="subtitle"]');
+  const imageWrapper = block.querySelector('[data-aue-prop="image"]');
+  const buttonCountEl = block.querySelector('[data-aue-prop="buttonCount"]');
+  const mainTextEl = block.querySelector('[data-aue-prop="mainButtonText"]');
+  const subTextEl = block.querySelector('[data-aue-prop="subButtonText"]');
+  const mainLinkWrapper = block.querySelector('[data-aue-prop="mainButtonLink"]');
+  const subLinkWrapper = block.querySelector('[data-aue-prop="subButtonLink"]');
+
+  // 提取圖片
+  const imageInWrapper = imageWrapper?.tagName === 'IMG'
+    ? imageWrapper
+    : imageWrapper?.querySelector('img');
+
+  // 準備資料
+  const data = {
+    title: titleEl?.textContent.trim() || '',
+    subtitle: subtitleEl?.textContent.trim() || '',
+    subtitleHtml: subtitleEl?.innerHTML || '',
+    image: imageInWrapper?.getAttribute('src') || '',
+    imageAlt: imageInWrapper?.getAttribute('alt') || '',
+    buttonCount: buttonCountEl?.textContent.trim().toLowerCase() || 'none',
+    mainButtonText: mainTextEl?.textContent.trim() || '',
+    subButtonText: subTextEl?.textContent.trim() || '',
+    mainButtonLink: extractContentPath(mainLinkWrapper),
+    subButtonLink: extractContentPath(subLinkWrapper),
+  };
+
+  // 隱藏所有原始欄位
+  const hideElement = (el) => {
+    if (!el) return;
+    el.style.setProperty('display', 'none', 'important');
+    el.querySelectorAll('*').forEach((child) => {
+      child.style.setProperty('display', 'none', 'important');
+    });
+  };
+
+  [titleEl, subtitleEl, imageWrapper, buttonCountEl,
+    mainTextEl, subTextEl, mainLinkWrapper, subLinkWrapper].forEach((el) => {
+    if (el) {
+      hideElement(el);
+      hideElement(el.parentElement);
+    }
+  });
+
+  // 渲染預覽
+  block.innerHTML = '';
+  block.appendChild(renderBanner(data));
+}
+
+// 📄 表格模式：解析資料
+function parseTableMode(block) {
+  const rows = [...block.children];
+  const data = {};
+
+  // 通用解析函數
+  const parseRow = (index, key) => {
+    const cell = rows[index]?.children[0];
+    if (!cell) return;
+
+    if (key === 'image') {
+      const img = cell.querySelector('img');
+      if (img) {
+        data.image = img.getAttribute('src');
+        data.imageAlt = img.getAttribute('alt') || '';
+      }
+      return;
+    }
+
+    const link = cell.querySelector('a[href]');
+    if (link) {
+      data[`${key}Link`] = link.getAttribute('href');
+      if (!data[key]) data[key] = link.textContent.trim();
+      return;
+    }
+
+    const p = cell.querySelector('p');
+    data[key] = p ? p.textContent.trim() : cell.textContent.trim();
+  };
+
+  // 解析各行
+  parseRow(0, 'title');
+  parseRow(1, 'subtitle');
+  parseRow(2, 'image');
+  parseRow(3, 'buttonCount');
+  parseRow(4, 'mainButtonText');
+  parseRow(5, 'subButtonText');
+
+  // 套用預設值
+  Object.keys(DEFAULT_VALUES).forEach((key) => {
+    if (!data[key]) data[key] = DEFAULT_VALUES[key];
+  });
+
+  return data;
+}
+
+// 🎯 主函數
+export default function decorate(block) {
+  const isEditor = block.hasAttribute('data-aue-resource');
+
+  // 檢查是否有 data-aue-prop（Universal Editor 模式）
+  const hasProps = block.querySelectorAll('[data-aue-prop]').length > 0;
+
+  if (isEditor && hasProps) {
+    // 編輯器模式
+    handleEditorMode(block);
+  } else {
+    // Runtime 模式
+    let data;
+
+    if (hasProps) {
+      // 從 data-aue-prop 解析
+      data = {};
+      block.querySelectorAll('[data-aue-prop]').forEach((el) => {
+        const key = el.getAttribute('data-aue-prop');
+
+        const img = el.querySelector('img');
+        if (img?.getAttribute('src')) {
+          data[key] = img.getAttribute('src');
+          return;
+        }
+
+        const a = el.querySelector('a[href]');
+        if (a) {
+          data[key] = a.getAttribute('href');
+          return;
+        }
+
+        const text = el.textContent.trim();
+        if (text) data[key] = text;
+      });
+    } else {
+      // 從表格解析
+      data = parseTableMode(block);
+    }
+
+    // 渲染
+    block.innerHTML = '';
+    block.appendChild(renderBanner(data));
+  }
 }
