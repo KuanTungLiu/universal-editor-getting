@@ -8,7 +8,7 @@ const DEFAULT_VALUES = {
   subButtonLink: '#',
 };
 
-//工具函數：提取 AEM 內容路徑
+// 工具函數：提取 AEM 內容路徑
 function extractContentPath(el) {
   if (!el) return '';
 
@@ -170,7 +170,7 @@ function handleEditorMode(block) {
   block.appendChild(renderBanner(data));
 }
 
-//表格模式：解析資料
+// 表格模式：解析資料
 function parseTableMode(block) {
   const rows = [...block.children];
   const data = {};
@@ -216,7 +216,7 @@ function parseTableMode(block) {
   return data;
 }
 
-//主函數
+// 主函數
 export default function decorate(block) {
   const isEditor = block.hasAttribute('data-aue-resource');
 
