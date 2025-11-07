@@ -37,40 +37,79 @@ function extractCfPath(el) {
 }
 
 /* GraphQL 版本：以 endpoint.graphql 呼叫 CubAnnouncementsByPath */
-async function fetchAnnouncementsGQL(cfPath, limit = 10) {
-  console.log('🔍 [GQL] 開始 fetch，路徑:', cfPath, '，limit:', limit);
+async function fetchAnnouncementsGQL(cfPath = '', limit = 10) {
+  console.log('🔍 [GQL] 開始 fetch，路徑:', cfPath || '(全部公告)', '，limit:', limit);
 
-  // 用 persisted query URL 方式帶變數
-  const url = `${GQL_ENDPOINT};path=${encodeURIComponent(cfPath)};limit=${limit}`;
+  // 如果 cfPath 有值，就加 filter，否則抓全部
+  const filterPart = cfPath
+    ? `
+      filter: {
+        _path: { _expressions: [{ value: "${cfPath}", _operator: STARTS_WITH }] }
+      }
+    `
+    : '';
 
-  const res = await fetch(url, {
-    method: 'GET',
+  const query = `
+    query CubAnnouncementsByPath($limit: Int = 10) {
+      cubAnnouncementPaginated(
+        first: $limit
+        ${filterPart}
+      ) {
+        edges {
+          node {
+            _path
+            noticeTitle
+            noticeDate
+            noticeContent { html }
+          }
+        }
+      }
+    }
+  `;
+
+  const variables = { limit: Number(limit) };
+
+  const res = await fetch(GQL_ENDPOINT, {
+    method: 'POST',
     headers: {
+      'Content-Type': 'application/json',
       Accept: 'application/json',
     },
+    credentials: 'include',
+    body: JSON.stringify({ query, variables }),
   });
 
   console.log('🔁 [GQL] HTTP 狀態:', res.status);
   if (!res.ok) throw new Error(`GraphQL HTTP ${res.status}`);
 
   const payload = await res.json();
-  if (payload.errors?.length) {
+  if (payload.errors && payload.errors.length) {
     throw new Error(payload.errors.map((e) => e.message).join('; '));
   }
 
   const edges = payload?.data?.cubAnnouncementPaginated?.edges || [];
-  const items = edges.map(({ node }) => ({
-    path: node.path || '',
-    title: node.noticeTitle || '',
-    date: node.noticeDate || '',
-    excerpt: node.noticeContent?.html || '',
+  const items = edges.map(({
+    node: {
+      _path: path, noticeTitle, noticeDate, noticeContent,
+    },
+  }) => ({
+    path: path || '',
+    title: noticeTitle || '',
+    date: noticeDate || '',
+    excerpt: noticeContent?.html || '',
   }));
 
   // 過濾未來日期、日期新到舊排序
   const now = new Date();
   const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const announcements = items
-    .filter((item) => item.title && (!item.date || new Date(item.date) <= todayOnly))
+    .filter((item) => {
+      if (!item.title) return false;
+      if (!item.date) return true;
+      const d = new Date(item.date);
+      const dOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      return dOnly <= todayOnly;
+    })
     .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
   console.log('✅ [GQL] 解析出', announcements.length, '個公告');
