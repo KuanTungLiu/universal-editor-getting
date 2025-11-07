@@ -11,6 +11,23 @@ const ENABLE_JCR_FALLBACK = true;
 // 用於取 node 的 path 欄位（變數名稱沒有前導下劃線）
 const PATH_PROP = '_path';
 
+function sanitizeContentPath(raw) {
+  if (!raw) return '';
+  let v = raw.toString().trim();
+  // 若是完整 URL，取出 /content 之後
+  const idx = v.indexOf('/content/');
+  if (idx !== -1) v = v.slice(idx);
+  // 去除查詢與 hash
+  v = v.replace(/[?#].*$/, '');
+  // 嘗試解碼一次，避免 %E5%8F%AF%... 之類影響比對
+  try { if (/%[0-9A-Fa-f]{2}/.test(v)) v = decodeURIComponent(v); } catch (e) { /* ignore */ }
+  // 去掉 .html/.htm 結尾（頁面連結轉回路徑基底）
+  v = v.replace(/\.(html?)$/i, '');
+  // 收尾空白
+  v = v.trim();
+  return v;
+}
+
 function extractCfPath(el) {
   if (!el) return '';
   const link = el.querySelector && el.querySelector('a');
@@ -28,19 +45,14 @@ function extractCfPath(el) {
   candidates.push(el.getAttribute && el.getAttribute('data-href'));
   candidates.push(el.textContent && el.textContent.trim());
 
-  const normalized = candidates
-    .filter(Boolean)
-    .map((v) => v.toString().trim());
+  const normalized = candidates.filter(Boolean).map(sanitizeContentPath).filter(Boolean);
 
-  const direct = normalized.find((v) => v.startsWith('/content/'));
-  if (direct) return direct;
-
-  for (let i = 0; i < normalized.length; i += 1) {
-    const v = normalized[i];
-    const idx = v.indexOf('/content/');
-    if (idx !== -1) return v.slice(idx).split(/[\s"']+/)[0];
-  }
-
+  // 優先找 DAM 路徑
+  const dam = normalized.find((v) => v.startsWith('/content/dam/'));
+  if (dam) return dam;
+  // 其次接受 /content/ 路徑（但 PQ 需要 DAM，後續會提示）
+  const generic = normalized.find((v) => v.startsWith('/content/'));
+  if (generic) return generic;
   return '';
 }
 
@@ -411,7 +423,7 @@ export default async function decorate(block) {
       const match = allText.match(/\/content\/[^\s"'<>]+/);
       if (match) {
         const [matchedPath] = match;
-        data.cfPath = matchedPath;
+        data.cfPath = sanitizeContentPath(matchedPath);
       }
     }
     const rows = [...block.children];
@@ -465,6 +477,12 @@ export default async function decorate(block) {
 
   if (!cfPath) {
     newsList.innerHTML = '<div class="error">請設定公告資料夾路徑</div>';
+    return;
+  }
+
+  // 僅接受 DAM 內容片段資料夾；避免使用 .html 頁面路徑
+  if (!cfPath.startsWith('/content/dam/')) {
+    newsList.innerHTML = '<div class="error">請選擇 /content/dam 下的公告資料夾（不要用 .html 頁面連結）</div>';
     return;
   }
 
