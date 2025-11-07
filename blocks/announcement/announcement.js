@@ -43,39 +43,39 @@ async function fetchAnnouncementsGQL(cfFolderPath, limit = 10) {
   // 確保 path 以 / 開頭
   const normalizedPath = cfFolderPath.startsWith('/') ? cfFolderPath : `/${cfFolderPath}`;
 
-  // GraphQL query
-  const query = `
-    query CubAnnouncementsByPath($path: ID!, $limit: Int = 10) {
-      cubAnnouncementPaginated(
-        first: $limit
-        filter: { _path: { _expressions: [{ value: $path, _operator: STARTS_WITH }] } }
-      ) {
-        edges {
-          node {
-            _path
-            noticeTitle
-            noticeDate
-            noticeContent { html }
-          }
-        }
-      }
-    }
-  `;
+  // // GraphQL query
+  // const query = `
+  //   query CubAnnouncementsByPath($path: ID!, $limit: Int = 10) {
+  //     cubAnnouncementPaginated(
+  //       first: $limit
+  //       filter: { _path: { _expressions: [{ value: $path, _operator: STARTS_WITH }] } }
+  //     ) {
+  //       edges {
+  //         node {
+  //           _path
+  //           noticeTitle
+  //           noticeDate
+  //           noticeContent { html }
+  //         }
+  //       }
+  //     }
+  //   }
+  // `;
 
   // 注意：AEM Cloud 要加 ;path=，fetch 會自動處理
   const endpointWithPath = `${GQL_ENDPOINT};path=${encodeURIComponent(normalizedPath)}`;
 
   const res = await fetch(endpointWithPath, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    credentials: 'include', // 保留 session
-    body: JSON.stringify({
-      query,
-      variables: { path: normalizedPath, limit: Number(limit) },
-    }),
+    method: 'GET',
+    // headers: {
+    //   'Content-Type': 'application/json',
+    //   Accept: 'application/json',
+    // },
+    // credentials: 'include', // Post put
+    // body: JSON.stringify({
+    //   query,
+    //   variables: { path: normalizedPath, limit: Number(limit) },
+    // ),
   });
 
   console.log('🔁 [GQL] HTTP 狀態:', res.status);
