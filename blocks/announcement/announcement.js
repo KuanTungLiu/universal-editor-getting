@@ -1,38 +1,38 @@
 const GQL_ENDPOINT = '/graphql/execute.json/ktliu-testing/Announcement;path=';
 const ENABLE_JCR_FALLBACK = true;
 
-function extractCfPath(el) {
-  if (!el) return '';
-  const link = el.querySelector && el.querySelector('a');
-  const candidates = [];
-  if (link) {
-    candidates.push(link.getAttribute('href'));
-    candidates.push(link.href);
-    if (link.dataset) candidates.push(link.dataset.value, link.dataset.href);
-    candidates.push(link.getAttribute('data-value'));
-    candidates.push(link.getAttribute('data-href'));
-    candidates.push(link.textContent && link.textContent.trim());
-  }
-  if (el.dataset) candidates.push(el.dataset.value, el.dataset.href);
-  candidates.push(el.getAttribute && el.getAttribute('data-value'));
-  candidates.push(el.getAttribute && el.getAttribute('data-href'));
-  candidates.push(el.textContent && el.textContent.trim());
+// function extractCfPath(el) {
+//   if (!el) return '';
+//   const link = el.querySelector && el.querySelector('a');
+//   const candidates = [];
+//   if (link) {
+//     candidates.push(link.getAttribute('href'));
+//     candidates.push(link.href);
+//     if (link.dataset) candidates.push(link.dataset.value, link.dataset.href);
+//     candidates.push(link.getAttribute('data-value'));
+//     candidates.push(link.getAttribute('data-href'));
+//     candidates.push(link.textContent && link.textContent.trim());
+//   }
+//   if (el.dataset) candidates.push(el.dataset.value, el.dataset.href);
+//   candidates.push(el.getAttribute && el.getAttribute('data-value'));
+//   candidates.push(el.getAttribute && el.getAttribute('data-href'));
+//   candidates.push(el.textContent && el.textContent.trim());
 
-  const normalized = candidates
-    .filter(Boolean)
-    .map((v) => v.toString().trim());
+//   const normalized = candidates
+//     .filter(Boolean)
+//     .map((v) => v.toString().trim());
 
-  const direct = normalized.find((v) => v.startsWith('/content/'));
-  if (direct) return direct;
+//   const direct = normalized.find((v) => v.startsWith('/content/'));
+//   if (direct) return direct;
 
-  for (let i = 0; i < normalized.length; i += 1) {
-    const v = normalized[i];
-    const idx = v.indexOf('/content/');
-    if (idx !== -1) return v.slice(idx).split(/[\s"']+/)[0];
-  }
+//   for (let i = 0; i < normalized.length; i += 1) {
+//     const v = normalized[i];
+//     const idx = v.indexOf('/content/');
+//     if (idx !== -1) return v.slice(idx).split(/[\s"']+/)[0];
+//   }
 
-  return '';
-}
+//   return '';
+// }
 
 /* GraphQL 版本：以 endpoint.graphql 呼叫 CubAnnouncementsByPath */
 async function fetchAnnouncementsGQL(cfFolderPath, limit = 10) {
